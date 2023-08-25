@@ -1,0 +1,471 @@
+{
+    "Standings": [{
+            "TeamName": "Team_1",
+            "TeamScore": 23
+        }, {
+            "TeamName": "Team_0",
+            "TeamScore": 18
+        }, {
+            "TeamName": "Team_2",
+            "TeamScore": 14
+        }, {
+            "TeamName": "Team_7",
+            "TeamScore": 14
+        }, {
+            "TeamName": "Team_4",
+            "TeamScore": 13
+        }, {
+            "TeamName": "Team_5",
+            "TeamScore": 13
+        }, {
+            "TeamName": "Team_6",
+            "TeamScore": 13
+        }, {
+            "TeamName": "Team_3",
+            "TeamScore": 7
+        }
+    ],
+    "Stats": [{
+            "TeamName": "Team_0",
+            "PlayedAgainstTeam": [{
+                    "Key": "Team_1",
+                    "Value": 2
+                }, {
+                    "Key": "Team_5",
+                    "Value": 2
+                }, {
+                    "Key": "Team_3",
+                    "Value": 2
+                }, {
+                    "Key": "Team_6",
+                    "Value": 1
+                }, {
+                    "Key": "Team_4",
+                    "Value": 1
+                }, {
+                    "Key": "Team_7",
+                    "Value": 1
+                }, {
+                    "Key": "Team_2",
+                    "Value": 1
+                }
+            ],
+            "PlayedGames": [{
+                    "Key": "Ignition",
+                    "Value": 2
+                }, {
+                    "Key": "Mario Kart 64",
+                    "Value": 1
+                }, {
+                    "Key": "SSX Tricky",
+                    "Value": 1
+                }, {
+                    "Key": "Super Bomber Man",
+                    "Value": 1
+                }, {
+                    "Key": "Trackmania",
+                    "Value": 1
+                }, {
+                    "Key": "Towerfall Ascension",
+                    "Value": 1
+                }, {
+                    "Key": "Serious Sam 2",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Legion TD War",
+                    "Value": 1
+                }, {
+                    "Key": "Stickisticks",
+                    "Value": 1
+                }
+            ]
+        }, {
+            "TeamName": "Team_1",
+            "PlayedAgainstTeam": [{
+                    "Key": "Team_2",
+                    "Value": 2
+                }, {
+                    "Key": "Team_0",
+                    "Value": 2
+                }, {
+                    "Key": "Team_6",
+                    "Value": 2
+                }, {
+                    "Key": "Team_7",
+                    "Value": 1
+                }, {
+                    "Key": "Team_3",
+                    "Value": 1
+                }, {
+                    "Key": "Team_5",
+                    "Value": 1
+                }, {
+                    "Key": "Team_4",
+                    "Value": 1
+                }
+            ],
+            "PlayedGames": [{
+                    "Key": "SSX Tricky",
+                    "Value": 1
+                }, {
+                    "Key": "Serious Sam 2",
+                    "Value": 1
+                }, {
+                    "Key": "Super Bomber Man",
+                    "Value": 1
+                }, {
+                    "Key": "Ignition",
+                    "Value": 1
+                }, {
+                    "Key": "Towerfall Ascension",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Warlock",
+                    "Value": 1
+                }, {
+                    "Key": "Stickisticks",
+                    "Value": 1
+                }, {
+                    "Key": "Caps",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Legion TD War",
+                    "Value": 1
+                }, {
+                    "Key": "Trackmania",
+                    "Value": 1
+                }
+            ]
+        }, {
+            "TeamName": "Team_2",
+            "PlayedAgainstTeam": [{
+                    "Key": "Team_1",
+                    "Value": 2
+                }, {
+                    "Key": "Team_3",
+                    "Value": 2
+                }, {
+                    "Key": "Team_4",
+                    "Value": 2
+                }, {
+                    "Key": "Team_7",
+                    "Value": 1
+                }, {
+                    "Key": "Team_6",
+                    "Value": 1
+                }, {
+                    "Key": "Team_5",
+                    "Value": 1
+                }, {
+                    "Key": "Team_0",
+                    "Value": 1
+                }
+            ],
+            "PlayedGames": [{
+                    "Key": "SSX Tricky",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Legion TD War",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Warlock",
+                    "Value": 1
+                }, {
+                    "Key": "Mario Kart 64",
+                    "Value": 1
+                }, {
+                    "Key": "Serious Sam 2",
+                    "Value": 1
+                }, {
+                    "Key": "Super Bomber Man",
+                    "Value": 1
+                }, {
+                    "Key": "Ignition",
+                    "Value": 1
+                }, {
+                    "Key": "Towerfall Ascension",
+                    "Value": 1
+                }, {
+                    "Key": "Caps",
+                    "Value": 1
+                }, {
+                    "Key": "Trackmania",
+                    "Value": 1
+                }
+            ]
+        }, {
+            "TeamName": "Team_3",
+            "PlayedAgainstTeam": [{
+                    "Key": "Team_7",
+                    "Value": 2
+                }, {
+                    "Key": "Team_2",
+                    "Value": 2
+                }, {
+                    "Key": "Team_0",
+                    "Value": 2
+                }, {
+                    "Key": "Team_5",
+                    "Value": 1
+                }, {
+                    "Key": "Team_1",
+                    "Value": 1
+                }, {
+                    "Key": "Team_4",
+                    "Value": 1
+                }, {
+                    "Key": "Team_6",
+                    "Value": 1
+                }
+            ],
+            "PlayedGames": [{
+                    "Key": "Trackmania",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Legion TD War",
+                    "Value": 1
+                }, {
+                    "Key": "Mario Kart 64",
+                    "Value": 1
+                }, {
+                    "Key": "Ignition",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Warlock",
+                    "Value": 1
+                }, {
+                    "Key": "Towerfall Ascension",
+                    "Value": 1
+                }, {
+                    "Key": "Serious Sam 2",
+                    "Value": 1
+                }, {
+                    "Key": "SSX Tricky",
+                    "Value": 1
+                }, {
+                    "Key": "Caps",
+                    "Value": 1
+                }, {
+                    "Key": "Stickisticks",
+                    "Value": 1
+                }
+            ]
+        }, {
+            "TeamName": "Team_4",
+            "PlayedAgainstTeam": [{
+                    "Key": "Team_5",
+                    "Value": 2
+                }, {
+                    "Key": "Team_2",
+                    "Value": 2
+                }, {
+                    "Key": "Team_7",
+                    "Value": 2
+                }, {
+                    "Key": "Team_0",
+                    "Value": 1
+                }, {
+                    "Key": "Team_6",
+                    "Value": 1
+                }, {
+                    "Key": "Team_3",
+                    "Value": 1
+                }, {
+                    "Key": "Team_1",
+                    "Value": 1
+                }
+            ],
+            "PlayedGames": [{
+                    "Key": "WC3 - Legion TD War",
+                    "Value": 1
+                }, {
+                    "Key": "SSX Tricky",
+                    "Value": 1
+                }, {
+                    "Key": "Trackmania",
+                    "Value": 1
+                }, {
+                    "Key": "Mario Kart 64",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Warlock",
+                    "Value": 1
+                }, {
+                    "Key": "Caps",
+                    "Value": 1
+                }, {
+                    "Key": "Stickisticks",
+                    "Value": 1
+                }, {
+                    "Key": "Towerfall Ascension",
+                    "Value": 1
+                }, {
+                    "Key": "Ignition",
+                    "Value": 1
+                }, {
+                    "Key": "Super Bomber Man",
+                    "Value": 1
+                }
+            ]
+        }, {
+            "TeamName": "Team_5",
+            "PlayedAgainstTeam": [{
+                    "Key": "Team_4",
+                    "Value": 2
+                }, {
+                    "Key": "Team_6",
+                    "Value": 2
+                }, {
+                    "Key": "Team_0",
+                    "Value": 2
+                }, {
+                    "Key": "Team_3",
+                    "Value": 1
+                }, {
+                    "Key": "Team_1",
+                    "Value": 1
+                }, {
+                    "Key": "Team_2",
+                    "Value": 1
+                }, {
+                    "Key": "Team_7",
+                    "Value": 1
+                }
+            ],
+            "PlayedGames": [{
+                    "Key": "Mario Kart 64",
+                    "Value": 2
+                }, {
+                    "Key": "Ignition",
+                    "Value": 2
+                }, {
+                    "Key": "WC3 - Legion TD War",
+                    "Value": 1
+                }, {
+                    "Key": "SSX Tricky",
+                    "Value": 1
+                }, {
+                    "Key": "Trackmania",
+                    "Value": 1
+                }, {
+                    "Key": "Towerfall Ascension",
+                    "Value": 1
+                }, {
+                    "Key": "Super Bomber Man",
+                    "Value": 1
+                }, {
+                    "Key": "Serious Sam 2",
+                    "Value": 1
+                }
+            ]
+        }, {
+            "TeamName": "Team_6",
+            "PlayedAgainstTeam": [{
+                    "Key": "Team_5",
+                    "Value": 2
+                }, {
+                    "Key": "Team_7",
+                    "Value": 2
+                }, {
+                    "Key": "Team_1",
+                    "Value": 2
+                }, {
+                    "Key": "Team_0",
+                    "Value": 1
+                }, {
+                    "Key": "Team_4",
+                    "Value": 1
+                }, {
+                    "Key": "Team_2",
+                    "Value": 1
+                }, {
+                    "Key": "Team_3",
+                    "Value": 1
+                }
+            ],
+            "PlayedGames": [{
+                    "Key": "Serious Sam 2",
+                    "Value": 2
+                }, {
+                    "Key": "Mario Kart 64",
+                    "Value": 1
+                }, {
+                    "Key": "SSX Tricky",
+                    "Value": 1
+                }, {
+                    "Key": "Trackmania",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Legion TD War",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Warlock",
+                    "Value": 1
+                }, {
+                    "Key": "Caps",
+                    "Value": 1
+                }, {
+                    "Key": "Super Bomber Man",
+                    "Value": 1
+                }, {
+                    "Key": "Ignition",
+                    "Value": 1
+                }
+            ]
+        }, {
+            "TeamName": "Team_7",
+            "PlayedAgainstTeam": [{
+                    "Key": "Team_3",
+                    "Value": 2
+                }, {
+                    "Key": "Team_6",
+                    "Value": 2
+                }, {
+                    "Key": "Team_4",
+                    "Value": 2
+                }, {
+                    "Key": "Team_1",
+                    "Value": 1
+                }, {
+                    "Key": "Team_2",
+                    "Value": 1
+                }, {
+                    "Key": "Team_0",
+                    "Value": 1
+                }, {
+                    "Key": "Team_5",
+                    "Value": 1
+                }
+            ],
+            "PlayedGames": [{
+                    "Key": "Super Bomber Man",
+                    "Value": 2
+                }, {
+                    "Key": "Trackmania",
+                    "Value": 1
+                }, {
+                    "Key": "Serious Sam 2",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Warlock",
+                    "Value": 1
+                }, {
+                    "Key": "WC3 - Legion TD War",
+                    "Value": 1
+                }, {
+                    "Key": "Ignition",
+                    "Value": 1
+                }, {
+                    "Key": "Caps",
+                    "Value": 1
+                }, {
+                    "Key": "Mario Kart 64",
+                    "Value": 1
+                }, {
+                    "Key": "SSX Tricky",
+                    "Value": 1
+                }
+            ]
+        }
+    ]
+}
