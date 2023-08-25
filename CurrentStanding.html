@@ -1,13 +1,44 @@
 <html>
-    <head>
-        <title>The Grunkgames 2023 - TeamStandings</title>
-    </head>
-    <body>
-        <div class="container">
 
-        </div>
-    </body>
-    <script>
+<head>
+    <title>The Grunkgames 2023 - TeamStandings</title>
+</head>
 
-    </script>
+<body>
+    <div id="standingContainer">
+
+    </div>
+    <div id="currentRoundContainer">
+
+    </div>
+</body>
+<script>
+    var GetCurrentRound = function() { fetch("https://localhost:44307/Game/GetCurrentRound")
+  .then((response) => response.json())
+  .then((json) => PrintCurrentRound(json)); }
+  setInterval(GetCurrentRound, 1000);
+
+  var GetTeamStanding = function() { fetch("https://localhost:44307/Game/GetTeamStandings")
+  .then((response) => response.json())
+  .then((json) => PrintStandings(json)); }
+  setInterval(GetTeamStanding, 1000);
+
+function PrintStandings(json){
+    var element = document.getElementById("standingContainer");
+    element.innerHTML = "";
+    json.forEach(team => {
+        element.innerHTML += "<div>" + team.TeamName + ", " + team.TeamScore + "</div>"
+    });
+}
+
+function PrintCurrentRound(json){
+    var element = document.getElementById("currentRoundContainer");
+    element.innerHTML = "";
+    json.Matches.forEach(match => {
+        element.innerHTML += "<div> <b>" + match.Team_1_Name + "</b> VS <b>" + match.Team_2_Name + "</b> Playing: "  + match.Game.Name + "</div>"
+    });
+}
+
+</script>
+
 </html>
