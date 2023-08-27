@@ -67,7 +67,7 @@ namespace TheGrunkGames2.Objects
             if (MatchesPlayed == null)
                 return 0;
 
-            return MatchesPlayed.Count(x => x.Team_1_Name.Equals(teamName) || x.Team_2_Name.Equals(teamName));
+            return MatchesPlayed.Count(x => x.Team_1_Name.Equals(teamName) || (x.Team_2_Name ?? string.Empty).Equals(teamName));
         }
 
     }

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>The Grunkgames 2023 - Admin  - Round stageing</title>
+</head>
+
+<body>
+    <div id="RoundId" style="display: none;"></div>
+    <div id="Stageing"></div>
+    <button id="GetStaging" onclick="GetStagingRound()">Get Staging / ReRoll</button>
+    <button id="SetStaging" onclick="SetStaging()">Commit to Round</button>
+</body>
+<script>
+    var GetStagingRound = function () {
+        fetch("https://localhost:44307/Game/GetNextRound_Staging")
+            .then((response) => response.json())
+            .then((json) => PrintStageingRound(json));
+    }
+
+    var SetStaging = function () {
+        var roundId = document.getElementById("RoundId").innerHTML;
+        if (roundId !== "" && roundId !== undefined) {
+            fetch("https://localhost:44307/Game/SetStaging?activate=true&roundId=" + roundId)
+                .then((response) => response.json())
+                .then((json) => PrintStageingRound(json));
+        }
+        else
+            console.log("No RoundId Found");
+    }
+
+    function PrintStageingRound(json) {
+        var element = document.getElementById("Stageing");
+        element.innerHTML = "";
+        var roundId = json.RoundId;
+        document.getElementById("RoundId").innerHTML = roundId;
+        json.Matches.forEach(match => {
+            element.innerHTML += "<div> Round: " + roundId + " <b>" + match.Team_1_Name + "</b> VS <b>" + match.Team_2_Name + "</b> Playing: " + match.Game.Name + ", IsPreview/staging:" + json.isStaging + "</div>"
+        });
+    }
+
+</script>
+
+</html>

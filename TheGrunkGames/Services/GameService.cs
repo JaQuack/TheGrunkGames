@@ -21,16 +21,16 @@ namespace TheGrunkGames2.Services
 
             var games = new List<Game>
             {
+                new Game { Name = "Mario Kart 64", Device = Device.TV },
                 new Game { Name = "Age of Empires 2", Device = Device.PC_Steam },
-                new Game { Name = "NFS: Most Wanted", Device = Device.PC_Steam},
-                new Game { Name = "Dark Messiah of Might and Magic", Device = Device.PC_Steam_2 },
-                new Game { Name = "Half life 1 vs", Device = Device.PC_Steam_2 },
-                new Game { Name = "Audiosurf", Device = Device.PC_Couch },
+                new Game { Name = "NFS: Underground 2", Device = Device.PC_Steam},
+                new Game { Name = "Half life 1", Device = Device.PC_Steam_2 },
+                //new Game { Name = "Audiosurf", Device = Device.PC_Couch },
                 new Game { Name = "Doom 2", Device = Device.PC_Couch },
                 new Game { Name = "Fifa 98", Device = Device.TV },
-                new Game { Name = "Mario Kart 64", Device = Device.TV },
                 new Game { Name = "Tetris Party Deluxe", Device = Device.TV_Wii },
-                new Game { Name = "Nintendo Land", Device = Device.TV_Wii },
+                new Game { Name = "Dark Messiah of Might and Magic", Device = Device.PC_Steam_2 },
+                new Game { Name = "Mario Tennis", Device = Device.TV_Wii },
                 new Game { Name = "Beerpong", Device = Device.IRL },
                 new Game { Name = "TIMETRIAL", Device = Device.TIMETRIAL}
             };
@@ -38,35 +38,28 @@ namespace TheGrunkGames2.Services
             var teams = new List<Team>()
             {
                 new Team {
-                    TeamName = "Untitled Goose Team",
+                    TeamName = "Scourge of the Goat Sea",
                     Players = new List<Player> {
-                        new Player { Name = "Micke" },
-                        new Player { Name = "Norrland",}
+                        new Player { Name = "Player1" },
+                        new Player { Name = "Player2",}
                     },
                 },
                 new Team {
-                    TeamName = "One Dying Crew",
+                    TeamName = "De Renrakade",
                     Players = new List<Player> {
                         new Player { Name = "Player3", },
                         new Player { Name = "Player4"  }
                     },
                 },
                 new Team {
-                    TeamName = "Asspat",
+                    TeamName = "Rakabulle",
                     Players = new List<Player> {
                         new Player { Name = "Player5" },
                         new Player { Name = "Player6" }
                     },
                 },
-                new Team {
-                    TeamName = "Gubbstön",
-                    Players = new List<Player> {
-                        new Player { Name = "Player7" },
-                        new Player { Name = "Player8" }
-                    },
-                },
                  new Team {
-                    TeamName = "The Nippon Clamps",
+                    TeamName = "Nicki Minaj's Golden Shower",
                     Players = new List<Player> {
                         new Player { Name = "Player9" },
                         new Player { Name = "Player10" }
@@ -227,11 +220,7 @@ namespace TheGrunkGames2.Services
 
         public Round GetCurrentRound()
         {
-            if (GetActiveRounds().FirstOrDefault(x => !x.IsCompleted() && !x.isStaging) == null)
-            {
-                GetNextRound();
-            }
-            return Tournament.Rounds.OrderBy(y => y.RoundId).FirstOrDefault(x => !x.IsCompleted() && !x.isStaging);
+            return Tournament.Rounds.OrderByDescending(y => y.RoundId).FirstOrDefault(x => !x.IsCompleted() && !x.isStaging);
         }
 
         public Round GetNextRound()
@@ -323,7 +312,7 @@ namespace TheGrunkGames2.Services
             var deviceAndGameAvalible = true;
             if (game.Device == Device.TV)
             {
-                if (game.Name == "Tetris Party Deluxe" || game.Name == "Nintendo Land")
+                if (game.Name == "Tetris Party Deluxe" || game.Name == "Mario Tennis")
                 {
                     deviceAndGameAvalible = !matches.Any(x => (x.Game?.Name ?? string.Empty).Equals(game.Name)) && matches.Count(x => (x.Game?.Device ?? Device.Undefined) == game.Device) < 2;
                 }

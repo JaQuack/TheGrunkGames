@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Server.IIS.Core;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
@@ -47,9 +48,12 @@ namespace TheGrunkGames2.Controllers
         }
 
         [HttpGet("SetStaging")]
-        public string SetStaging(bool activate, bool reroll)
+        public string SetStaging(bool activate, int roundId)
         {
-            var round = _gameService.GetRound(0);
+            if (roundId == 0)
+                throw new Exception("Ivnalid RoundId");
+
+            var round = _gameService.GetRound(roundId);
             if (activate)
             {
                 round.isStaging = false;
@@ -59,10 +63,6 @@ namespace TheGrunkGames2.Controllers
             else
             {
                 _gameService.RemoveInactiveRounds();
-                if (reroll)
-                {
-                    return GetNextRoundStaging();
-                }
             }
             return JsonConvert.SerializeObject(round);
         }

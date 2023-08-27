@@ -1,44 +1,52 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
-    <title>The Grunkgames 2023 - TeamStandings</title>
+    <title>Gustavs Speltävling 2023 - TeamStandings</title>
 </head>
 
 <body>
-    <div id="standingContainer">
-
-    </div>
-    <div id="currentRoundContainer">
-
-    </div>
+    <div id="currentRoundContainer"></div>
+    <br />
+    <div id="standingContainer"></div>
 </body>
 <script>
-    var GetCurrentRound = function() { fetch("https://localhost:44307/Game/GetCurrentRound")
-  .then((response) => response.json())
-  .then((json) => PrintCurrentRound(json)); }
-  setInterval(GetCurrentRound, 1000);
+    var GetCurrentRound = function () {
+        fetch("https://localhost:44307/Game/GetCurrentRound")
+            .then((response) => response.json())
+            .then((json) => PrintCurrentRound(json));
+    }
+    setInterval(GetCurrentRound, 1000);
 
-  var GetTeamStanding = function() { fetch("https://localhost:44307/Game/GetTeamStandings")
-  .then((response) => response.json())
-  .then((json) => PrintStandings(json)); }
-  setInterval(GetTeamStanding, 1000);
+    var GetTeamStanding = function () {
+        fetch("https://localhost:44307/Game/GetTeamStandings")
+            .then((response) => response.json())
+            .then((json) => PrintStandings(json));
+    }
+    setInterval(GetTeamStanding, 1000);
 
-function PrintStandings(json){
-    var element = document.getElementById("standingContainer");
-    element.innerHTML = "";
-    json.forEach(team => {
-        element.innerHTML += "<div>" + team.TeamName + ", " + team.TeamScore + "</div>"
-    });
-}
+    function PrintStandings(json) {
+        var element = document.getElementById("standingContainer");
+        element.innerHTML = "";
+        json.forEach(team => {
+            element.innerHTML += "<div>" + team.TeamName + ", " + team.TeamScore + "</div>";
+        });
+    }
 
-function PrintCurrentRound(json){
-    var element = document.getElementById("currentRoundContainer");
-    element.innerHTML = "";
-    json.Matches.forEach(match => {
-        element.innerHTML += "<div> <b>" + match.Team_1_Name + "</b> VS <b>" + match.Team_2_Name + "</b> Playing: "  + match.Game.Name + "</div>"
-    });
-}
-
+    function PrintCurrentRound(json) {
+        var element = document.getElementById("currentRoundContainer");
+        element.innerHTML = "";
+        if (json === null || json === "" || json === undefined) {
+            element.innerHTML = "Ingen aktiv runda spelas";
+        }
+        else {
+            json.Matches.forEach(match => {
+                element.innerHTML += "<div> <b>" + match.Team_1_Name + 
+                    "</b>" + (match.Team_2_Name !== null ? " VS <b>" + match.Team_2_Name : "" ) + 
+                    "</b> Playing: " + (match.Game.Name === "TIMETRIAL" ? match.Game.Name + " (Overcooked)" : match.Game.Name )+ "</div>";
+            });
+        }
+    }
 </script>
 
 </html>
