@@ -29,7 +29,8 @@ namespace TheGrunkGames2.Controllers
 
             for (int i = 0; i < rounds; i++)
             {
-                var round = _gameService.GetNextRound();
+                //var round = _gameService.GetNextRound();
+                var round = _gameService.GetNextRoundNewLogic();
                 foreach (var match in round.Matches)
                 {
                     var matchResult = GetRandomMatchResult(match.MatchId);

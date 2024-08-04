@@ -57,12 +57,12 @@ namespace TheGrunkGames2.Objects
             return MatchesPlayed.Sum(x => x.IsTimeTrial ? 1 : 0);
         }
 
-        internal int GetMinPlaysAgainstTeams(List<Team> teams)
+        internal int NrTimesPlayedAgainstTeams(List<Team> teams)
         {
-            return teams.Min(x => GetMinPlaysAgainstTeam(x.TeamName));
+            return teams.Min(x => NrTimesPlayedAgainstTeam(x.TeamName));
         }
 
-        internal int GetMinPlaysAgainstTeam(string teamName)
+        internal int NrTimesPlayedAgainstTeam(string teamName)
         {
             if (MatchesPlayed == null)
                 return 0;

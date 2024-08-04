@@ -34,7 +34,8 @@ namespace TheGrunkGames2.Controllers
         [HttpGet("GetNextRound")]
         public string GetNextRound()
         {
-            var round = _gameService.GetNextRound();
+            //var round = _gameService.GetNextRound();
+            var round = _gameService.GetNextRoundNewLogic();
             return JsonConvert.SerializeObject(round);
         }
 
@@ -42,7 +43,8 @@ namespace TheGrunkGames2.Controllers
         public string GetNextRoundStaging()
         {
             _gameService.RemoveInactiveRounds();
-            var round = _gameService.GetNextRound();
+            //var round = _gameService.GetNextRound();
+            var round = _gameService.GetNextRoundNewLogic();
             round.isStaging = true;
             return JsonConvert.SerializeObject(round);
         }

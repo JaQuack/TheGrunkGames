@@ -25,7 +25,7 @@ namespace TheGrunkGames2.Services
                 new Game { Name = "Age of Empires 2", Device = Device.PC_Steam },
                 new Game { Name = "NFS: Underground 2", Device = Device.PC_Steam},
                 new Game { Name = "Half life 1", Device = Device.PC_Steam_2 },
-                //new Game { Name = "Audiosurf", Device = Device.PC_Couch },
+                new Game { Name = "Audiosurf", Device = Device.PC_Couch },
                 new Game { Name = "Doom 2", Device = Device.PC_Couch },
                 new Game { Name = "Fifa 98", Device = Device.TV },
                 new Game { Name = "Tetris Party Deluxe", Device = Device.TV_Wii },
@@ -254,8 +254,8 @@ namespace TheGrunkGames2.Services
                     continue;
                 var teamsNotYetMatched = teams.Where(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName)) && !x.TeamName.Equals(team.TeamName)).ToList();
 
-                var minGamesPlayedAgainstSame = team.GetMinPlaysAgainstTeams(teamsNotYetMatched);
-                var teamsToChooseFrom = teamsNotYetMatched.Where(x => x.GetMinPlaysAgainstTeam(team.TeamName) == minGamesPlayedAgainstSame).ToList();
+                var minGamesPlayedAgainstSame = team.NrTimesPlayedAgainstTeams(teamsNotYetMatched);
+                var teamsToChooseFrom = teamsNotYetMatched.Where(x => x.NrTimesPlayedAgainstTeam(team.TeamName) == minGamesPlayedAgainstSame).ToList();
                 var opponent = (teamsToChooseFrom.FirstOrDefault() ?? teamsNotYetMatched.FirstOrDefault()) ?? throw new Exception("Unable to find opponent!");
                 matchups.Add(new Match
                 {
@@ -270,6 +270,72 @@ namespace TheGrunkGames2.Services
             Tournament.Rounds.Add(round);
             return round;
         }
+
+
+        public Round GetNextRoundNewLogic()
+        {
+            var teams = Tournament.Teams;
+            var nrGamesToSelect = (int)Math.Floor(teams.Count / 2m);
+
+            //broken sorting
+            var gamesSortedByLeastPlayed = Tournament.Games.Where(x => x.Device != Device.TIMETRIAL).Select(x => new { game = x, nrPlayed = teams.Sum(y => y.NrTimesHavePlayedGame(x.Name)) } ).OrderBy(x => x.nrPlayed).ToList();
+            var games = new List<Game>();
+
+            for (var i = 0; i < nrGamesToSelect; i++)
+            {
+                var game = gamesSortedByLeastPlayed.FirstOrDefault(x => !games.Any(y => y.Device == x.game.Device));
+                games.Add(game.game);
+            }
+
+
+            var round = new Round
+            {
+                RoundId = GetActiveRounds().Count == 0 ? 1 : GetActiveRounds().Max(x => x.RoundId) + 1
+            };
+            var matchups = new List<Match>();
+            var matchId = GetNextMatchId();
+
+            if (teams.Count % 2 != 0)
+            {
+                var minTimeTrial = teams.Min(x => x.TimeTrialsPlayed());
+                var teamsToChooseFrom = teams.Where(x => x.TimeTrialsPlayed() == minTimeTrial);
+                var teamToPlayTimeTrial = teamsToChooseFrom.ElementAt(_random.Next(teamsToChooseFrom.Count()));
+
+                matchups.Add(new Match
+                {
+                    Team_1_Name = teamToPlayTimeTrial.TeamName,
+                    IsTimeTrial = true,
+                    Game = Tournament.Games.FirstOrDefault(x => x.Device == Device.TIMETRIAL),
+                    MatchId = matchId++
+                });
+            }
+
+            foreach (var game in games)
+            {
+                var teamsNotYetMatched = teams.Where(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName))).OrderBy(x => x.NrTimesHavePlayedGame(game.Name)).ToList();
+                var team = teamsNotYetMatched.FirstOrDefault();
+                var opponents = teamsNotYetMatched.Skip(1).OrderBy(x => x.NrTimesHavePlayedGame(game.Name) + x.NrTimesPlayedAgainstTeam(team.TeamName) + (x.HasCompetedWithTeamInGame(team.TeamName, game.Name) ? 5 : 0));
+                var opponent = opponents.First();
+
+                matchups.Add(new Match
+                {
+                    Game = game,
+                    Team_1_Name = team.TeamName,
+                    Team_2_Name = opponent.TeamName,
+                    MatchId = matchId++
+                });
+            }
+
+            if (matchups.Any(x => x.Game == null && !x.IsTimeTrial) || teams.Any(x => !matchups.Any(y => y.Team_1_Name == x.TeamName || y.Team_2_Name == x.TeamName)))
+            {
+                throw new Exception("ASSIGN GAMES LOGIC ERROR!!!");
+            }
+
+            round.Matches = matchups;
+            Tournament.Rounds.Add(round);
+            return round;
+        }
+
 
         private void AssignGames(List<Match> matches)
         {
