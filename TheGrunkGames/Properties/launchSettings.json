@@ -17,7 +17,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "TheGrunkGames2": {
+    "TheGrunkGames": {
       "commandName": "Project",
       "dotnetRunMessages": "true",
       "launchBrowser": true,

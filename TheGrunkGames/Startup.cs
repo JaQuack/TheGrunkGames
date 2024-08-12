@@ -11,9 +11,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TheGrunkGames2.Services;
+using TheGrunkGames.Services;
 
-namespace TheGrunkGames2
+namespace TheGrunkGames
 {
     public class Startup
     {
@@ -30,9 +30,10 @@ namespace TheGrunkGames2
 
             services.AddControllers();
             services.AddSingleton<GameService>();
+            services.AddSingleton<StorageService>();
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "TheGrunkGames2", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "TheGrunkGames", Version = "v1" });
             });
             services.AddCors();
         }
@@ -44,7 +45,7 @@ namespace TheGrunkGames2
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TheGrunkGames2 v1"));
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TheGrunkGames v1"));
             }
 
             app.UseHttpsRedirection();

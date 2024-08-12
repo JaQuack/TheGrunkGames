@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace TheGrunkGames2.Objects
+namespace TheGrunkGames.Objects
 {
     public class Match
     {

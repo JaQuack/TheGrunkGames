@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace TheGrunkGames2.Services
+namespace TheGrunkGames.Services
 {
     internal class RoundStats
     {

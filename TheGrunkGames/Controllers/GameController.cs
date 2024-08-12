@@ -6,10 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TheGrunkGames2.Objects;
-using TheGrunkGames2.Services;
+using TheGrunkGames.Services;
+using TheGrunkGames.Objects;
 
-namespace TheGrunkGames2.Controllers
+namespace TheGrunkGames.Controllers
 {
     [ApiController]
     [Route("[controller]")]
@@ -17,11 +17,13 @@ namespace TheGrunkGames2.Controllers
     {
         private readonly ILogger<GameController> _logger;
         private readonly GameService _gameService;
+        private readonly StorageService _storageService;
 
-        public GameController(ILogger<GameController> logger, GameService gameService)
+        public GameController(ILogger<GameController> logger, GameService gameService, StorageService storageService)
         {
             _logger = logger;
             _gameService = gameService;
+            _storageService = storageService;
         }
 
         [HttpGet("GetCurrentRound")]

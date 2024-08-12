@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using TheGrunkGames2.Services;
+using TheGrunkGames.Services;
 using System.Collections.Generic;
-using TheGrunkGames2.Objects;
+using TheGrunkGames.Objects;
 using System;
 using Newtonsoft.Json;
 
-namespace TheGrunkGames2.Controllers
+namespace TheGrunkGames.Controllers
 {
     [ApiController]
     [Route("[controller]")]

@@ -4,9 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TheGrunkGames2.Objects;
+using TheGrunkGames.Objects;
 
-namespace TheGrunkGames2.Services
+namespace TheGrunkGames.Services
 {
     public class GameService
     {
