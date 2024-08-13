@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using TheGrunkGames.Objects;
 using System;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace TheGrunkGames.Controllers
 {
@@ -22,19 +23,19 @@ namespace TheGrunkGames.Controllers
         }
 
         [HttpGet]
-        public string RunTestGame(int nrTeams = 8, int rounds = 10)
+        public async Task<string> RunTestGame(int nrTeams = 8, int rounds = 10)
         {
             var tournament = GetDummyTournament(nrTeams);
-            _gameService.SetTournament(tournament);
+            await _gameService.SetTournament(tournament);
 
             for (int i = 0; i < rounds; i++)
             {
                 //var round = _gameService.GetNextRound();
-                var round = _gameService.GetNextRoundNewLogic();
+                var round = await _gameService.GetNextRoundNewLogic();
                 foreach (var match in round.Matches)
                 {
                     var matchResult = GetRandomMatchResult(match.MatchId);
-                    _gameService.CompleteMatch(matchResult);
+                    await _gameService.CompleteMatch(matchResult);
                 }
             }
             return JsonConvert.SerializeObject(new
@@ -67,7 +68,7 @@ namespace TheGrunkGames.Controllers
             {
                 teams.Add(new Team { TeamName = $"Team_{i}" });
             }
-            return new Tournament { Games = games, Teams = teams, Rounds = new List<Round>() };
+            return new Tournament { Games = games, Teams = teams, Rounds = new List<Round>() /*, RowKey = "stat_0"*/ };
         }
 
         private MatchResult GetRandomMatchResult(int matchId)

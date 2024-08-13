@@ -10,15 +10,13 @@ namespace TheGrunkGames.Services
 {
     public class GameService
     {
-        private readonly ILogger<GameService> _logger;
-
         private Tournament Tournament;
         private static Random _random = new Random();
 
-        public GameService(ILogger<GameService> logger)
-        {
-            _logger = logger;
+        private readonly StorageService _storageService;
 
+        public GameService(StorageService storageService)
+        {
             var games = new List<Game>
             {
                 new Game { Name = "Mario Kart 64", Device = Device.TV },
@@ -75,6 +73,7 @@ namespace TheGrunkGames.Services
             };
 
             Tournament = new Tournament { Teams = teams, Games = games, Rounds = new List<Round>() };
+            _storageService = storageService;
         }
 
         internal Match GetMatch(int matchId)
@@ -88,7 +87,7 @@ namespace TheGrunkGames.Services
         }
 
 
-        internal void CompleteMatch(MatchResult result)
+        internal async Task CompleteMatch(MatchResult result)
         {
             var match = GetMatch(result.MatchId);
             match.ScoreTeam1 = result.Team1Score;
@@ -102,6 +101,7 @@ namespace TheGrunkGames.Services
                 var team2 = GetTeamByName(match.Team_2_Name);
                 team2.AddMatch(match);
             }
+            await _storageService.SaveTournament(Tournament);
         }
 
         private Team GetTeamByName(string name)
@@ -109,24 +109,26 @@ namespace TheGrunkGames.Services
             return Tournament.Teams.FirstOrDefault(x => x.TeamName.Equals(name, StringComparison.InvariantCultureIgnoreCase));
         }
 
-        internal void SetRound(Round round)
+        internal async Task SetRound(Round round)
         {
             var existingRound = GetRound(round.RoundId);
             Tournament.Rounds.Remove(existingRound);
             Tournament.Rounds.Add(round);
+            await _storageService.SaveTournament(Tournament);
         }
 
-        internal bool ChangeGameForMatch(int matchId, string gameName)
+        internal async Task<bool> ChangeGameForMatch(int matchId, string gameName)
         {
             var match = GetMatch(matchId);
             var game = Tournament.Games.FirstOrDefault(x => x.Name.Equals(gameName, StringComparison.InvariantCultureIgnoreCase));
             if (match == null || game == null)
                 return false;
             match.Game = game;
+            await _storageService.SaveTournament(Tournament);
             return false;
         }
 
-        internal void ChangeTeamsForMatch(int matchId, string team1Name, string team2Name)
+        internal async Task ChangeTeamsForMatch(int matchId, string team1Name, string team2Name)
         {
             var match = GetMatch(matchId);
             var team1 = GetTeamByName(team1Name);
@@ -135,6 +137,7 @@ namespace TheGrunkGames.Services
                 throw new Exception("You fuckedup the teamnames STUPID!");
             match.Team_1_Name = team1.TeamName;
             match.Team_2_Name = team2.TeamName;
+            await _storageService.SaveTournament(Tournament);
         }
 
         internal Round GetRound(int roundId)
@@ -142,14 +145,16 @@ namespace TheGrunkGames.Services
             return Tournament.Rounds.FirstOrDefault(x => x.RoundId == roundId);
         }
 
-        internal void AddGame(Game game)
+        internal async Task AddGame(Game game)
         {
             Tournament.Games.Add(game);
+            await _storageService.SaveTournament(Tournament);
         }
 
-        internal void SetGames(List<Game> games)
+        internal async Task SetGames(List<Game> games)
         {
             Tournament.Games = games;
+            await _storageService.SaveTournament(Tournament);
         }
 
         internal List<TeamStanding> GetTeamStandings()
@@ -203,19 +208,22 @@ namespace TheGrunkGames.Services
             return Tournament.Teams.FirstOrDefault(x => x.TeamName.Equals(teamName, StringComparison.InvariantCultureIgnoreCase)) != null;
         }
 
-        internal void AddTeam(Team team)
+        internal async Task AddTeam(Team team)
         {
             Tournament.Teams.Add(team);
+            await _storageService.SaveTournament(Tournament);
         }
 
-        public void SetTeams(List<Team> teams)
+        public async Task SetTeams(List<Team> teams)
         {
             Tournament.Teams = teams;
+            await _storageService.SaveTournament(Tournament);
         }
 
-        internal void SetTournament(Tournament newTornament)
+        internal async Task SetTournament(Tournament newTornament)
         {
             Tournament = newTornament;
+            await _storageService.SaveTournament(Tournament);
         }
 
         public Round GetCurrentRound()
@@ -223,7 +231,7 @@ namespace TheGrunkGames.Services
             return Tournament.Rounds.OrderByDescending(y => y.RoundId).FirstOrDefault(x => !x.IsCompleted() && !x.isStaging);
         }
 
-        public Round GetNextRound()
+        public async Task<Round> GetNextRound()
         {
             var teams = Tournament.Teams;
 
@@ -268,16 +276,16 @@ namespace TheGrunkGames.Services
             AssignGames(matchups);
             round.Matches = matchups;
             Tournament.Rounds.Add(round);
+            await _storageService.SaveTournament(Tournament);
             return round;
         }
 
 
-        public Round GetNextRoundNewLogic()
+        public async Task<Round> GetNextRoundNewLogic()
         {
             var teams = Tournament.Teams;
             var nrGamesToSelect = (int)Math.Floor(teams.Count / 2m);
-
-            //broken sorting
+ 
             var gamesSortedByLeastPlayed = Tournament.Games.Where(x => x.Device != Device.TIMETRIAL).Select(x => new { game = x, nrPlayed = teams.Sum(y => y.NrTimesHavePlayedGame(x.Name)) } ).OrderBy(x => x.nrPlayed).ToList();
             var games = new List<Game>();
 
@@ -286,7 +294,6 @@ namespace TheGrunkGames.Services
                 var game = gamesSortedByLeastPlayed.FirstOrDefault(x => !games.Any(y => y.Device == x.game.Device));
                 games.Add(game.game);
             }
-
 
             var round = new Round
             {
@@ -333,6 +340,7 @@ namespace TheGrunkGames.Services
 
             round.Matches = matchups;
             Tournament.Rounds.Add(round);
+            await _storageService.SaveTournament(Tournament);
             return round;
         }
 
@@ -402,21 +410,24 @@ namespace TheGrunkGames.Services
             return matches.Max(x => x.MatchId) + 1;
         }
 
-        public void AddExtraPoints(string teamName, int points)
+        public async Task AddExtraPoints(string teamName, int points)
         {
             var team = Tournament.Teams.FirstOrDefault(x => x.TeamName.Equals(teamName, StringComparison.InvariantCultureIgnoreCase));
             team.ExtraPoints += points;
+            await _storageService.SaveTournament(Tournament);
         }
 
-        internal void DeleteRound(int v)
+        internal async Task DeleteRound(int v)
         {
             var round = GetRound(v);
             Tournament.Rounds.Remove(round);
+            await _storageService.SaveTournament(Tournament);
         }
 
-        internal void RemoveInactiveRounds()
+        internal async Task RemoveInactiveRounds()
         {
             Tournament.Rounds.RemoveAll(x => x.isStaging);
+            await _storageService.SaveTournament(Tournament);
         }
     }
 }

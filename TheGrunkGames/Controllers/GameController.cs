@@ -15,15 +15,11 @@ namespace TheGrunkGames.Controllers
     [Route("[controller]")]
     public class GameController : ControllerBase
     {
-        private readonly ILogger<GameController> _logger;
         private readonly GameService _gameService;
-        private readonly StorageService _storageService;
 
-        public GameController(ILogger<GameController> logger, GameService gameService, StorageService storageService)
+        public GameController(GameService gameService)
         {
-            _logger = logger;
             _gameService = gameService;
-            _storageService = storageService;
         }
 
         [HttpGet("GetCurrentRound")]
@@ -34,25 +30,24 @@ namespace TheGrunkGames.Controllers
         }
 
         [HttpGet("GetNextRound")]
-        public string GetNextRound()
+        public async Task<string> GetNextRound()
         {
-            //var round = _gameService.GetNextRound();
-            var round = _gameService.GetNextRoundNewLogic();
+            var round = await _gameService.GetNextRoundNewLogic();
             return JsonConvert.SerializeObject(round);
         }
 
         [HttpGet("GetNextRound_Staging")]
-        public string GetNextRoundStaging()
+        public async Task<string> GetNextRoundStaging()
         {
-            _gameService.RemoveInactiveRounds();
+            await _gameService.RemoveInactiveRounds();
             //var round = _gameService.GetNextRound();
-            var round = _gameService.GetNextRoundNewLogic();
+            var round = await _gameService.GetNextRoundNewLogic();
             round.isStaging = true;
             return JsonConvert.SerializeObject(round);
         }
 
         [HttpGet("SetStaging")]
-        public string SetStaging(bool activate, int roundId)
+        public async Task<string> SetStaging(bool activate, int roundId)
         {
             if (roundId == 0)
                 throw new Exception("Ivnalid RoundId");
@@ -61,12 +56,12 @@ namespace TheGrunkGames.Controllers
             if (activate)
             {
                 round.isStaging = false;
-                _gameService.RemoveInactiveRounds();
+                await _gameService.RemoveInactiveRounds();
                 return JsonConvert.SerializeObject(round);
             }
             else
             {
-                _gameService.RemoveInactiveRounds();
+                await _gameService.RemoveInactiveRounds();
             }
             return JsonConvert.SerializeObject(round);
         }
@@ -83,40 +78,39 @@ namespace TheGrunkGames.Controllers
         }
 
         [HttpPost("SetRound_FullOverride")]
-        public IActionResult SetRound(Round round)
+        public async Task<IActionResult> SetRound(Round round)
         {
             if (round == null || _gameService.GetRound(round.RoundId) == null)
                 return BadRequest();
 
-            _gameService.SetRound(round);
+            await _gameService.SetRound(round);
             return Ok();
         }
 
         [HttpPost("CompleteMatch")]
-        public IActionResult CompleteMatch(MatchResult result)
+        public async Task<IActionResult> CompleteMatch(MatchResult result)
         {
             if (result == null || _gameService.GetMatch(result.MatchId) == null)
                 return BadRequest();
 
-            _gameService.CompleteMatch(result);
+            await _gameService.CompleteMatch(result);
             return Ok();
         }
 
 
         [HttpPost("Tournament")]
-        public IActionResult SetTournament(Tournament tournament)
+        public async Task<IActionResult> SetTournament(Tournament tournament)
         {
             if (tournament == null)
                 return BadRequest();
 
-            _gameService.SetTournament(tournament);
+            await _gameService.SetTournament(tournament);
             return Ok();
         }
 
         [HttpGet("Tournament")]
         public string GetTournament()
         {
-
             var tournament = _gameService.GetTournament();
             return JsonConvert.SerializeObject(tournament);
         }
@@ -129,22 +123,22 @@ namespace TheGrunkGames.Controllers
         }
 
         [HttpPost("Teams")]
-        public IActionResult SetTeams(List<Team> teams)
+        public async Task<IActionResult> SetTeams(List<Team> teams)
         {
             if (teams == null)
                 return BadRequest();
 
-            _gameService.SetTeams(teams);
+            await _gameService.SetTeams(teams);
             return Ok();
         }
 
         [HttpPost("Team")]
-        public IActionResult AddTeam(Team team)
+        public async Task<IActionResult> AddTeam(Team team)
         {
             if (team == null)
                 return BadRequest();
 
-            _gameService.AddTeam(team);
+            await _gameService.AddTeam(team);
             return Ok();
         }
 
@@ -156,22 +150,22 @@ namespace TheGrunkGames.Controllers
         }
 
         [HttpPost("Games")]
-        public IActionResult SetGames(List<Game> games)
+        public async Task<IActionResult> SetGames(List<Game> games)
         {
             if (games == null)
                 return BadRequest();
 
-            _gameService.SetGames(games);
+            await _gameService.SetGames(games);
             return Ok();
         }
 
         [HttpPost("Game")]
-        public IActionResult AddGame(Game game)
+        public async Task<IActionResult> AddGame(Game game)
         {
             if (game == null)
                 return BadRequest();
 
-            _gameService.AddGame(game);
+            await _gameService.AddGame(game);
             return Ok();
         }
 
@@ -183,28 +177,28 @@ namespace TheGrunkGames.Controllers
         }
 
         [HttpPost("AddExtraPoints")]
-        public IActionResult AddExtraPoints(string teamName, int points)
+        public async Task<IActionResult> AddExtraPoints(string teamName, int points)
         {
             if (!_gameService.TeamExists(teamName))
                 return BadRequest("No team with that name exists");
-            _gameService.AddExtraPoints(teamName, points);
+            await _gameService.AddExtraPoints(teamName, points);
             return Ok();
         }
 
         [HttpPost("ChangeGameForMatch")]
-        public IActionResult ChangeGameForMatch(int matchId, string gameName)
+        public async Task<IActionResult> ChangeGameForMatch(int matchId, string gameName)
         {
-            if (matchId == 0 || string.IsNullOrEmpty(gameName) || !_gameService.ChangeGameForMatch(matchId,gameName))
+            if (matchId == 0 || string.IsNullOrEmpty(gameName) || !await _gameService.ChangeGameForMatch(matchId,gameName))
                 return BadRequest();
             return Ok();
         }
 
         [HttpPost("ChangeTeamsForMatch")]
-        public IActionResult ChangeTeamsForMatch(int matchId, string team1Name, string team2Name)
+        public async Task<IActionResult> ChangeTeamsForMatch(int matchId, string team1Name, string team2Name)
         {
             if (_gameService.GetMatch(matchId) == null || string.IsNullOrEmpty(team1Name) || string.IsNullOrEmpty(team2Name))
                 return BadRequest();
-            _gameService.ChangeTeamsForMatch(matchId, team1Name, team2Name);
+            await _gameService.ChangeTeamsForMatch(matchId, team1Name, team2Name);
             return Ok();
         }
     }
