@@ -57,9 +57,9 @@ namespace TheGrunkGames.Controllers
                 new Game { Name = "Audiosurf", Device = Device.PC_Couch },
                 new Game { Name = "Doom 2", Device = Device.PC_Couch },
                 new Game { Name = "Fifa 98", Device = Device.TV },
-                new Game { Name = "Tetris Party Deluxe", Device = Device.TV_Wii },
+                new Game { Name = "Tetris Party Deluxe", Device = Device.TV_GameCube },
                 new Game { Name = "Dark Messiah of Might and Magic", Device = Device.PC_Steam_2 },
-                new Game { Name = "Mario Tennis", Device = Device.TV_Wii },
+                new Game { Name = "Mario Tennis", Device = Device.TV_GameCube },
                 new Game { Name = "Beerpong", Device = Device.IRL },
                 new Game { Name = "TIMETRIAL", Device = Device.TIMETRIAL}
             };

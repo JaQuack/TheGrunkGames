@@ -363,3 +363,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /TheGrunkGames/appsettings.Development.json
+/TheGrunkGames/Properties/ServiceDependencies/TheGrunkGames - Web Deploy
+/swagger.json

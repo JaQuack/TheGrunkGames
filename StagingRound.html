@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>The Grunkgames 2023 - Admin  - Round stageing</title>
+    <title>The Grunkgames 2024 - Admin  - Round stageing</title>
 </head>
 
 <body>
@@ -13,7 +13,7 @@
 </body>
 <script>
     var GetStagingRound = function () {
-        fetch("https://localhost:44307/Game/GetNextRound_Staging")
+        fetch("https://thegrunkgames.azurewebsites.net/Game/GetNextRound_Staging")
             .then((response) => response.json())
             .then((json) => PrintStageingRound(json));
     }
@@ -21,7 +21,7 @@
     var SetStaging = function () {
         var roundId = document.getElementById("RoundId").innerHTML;
         if (roundId !== "" && roundId !== undefined) {
-            fetch("https://localhost:44307/Game/SetStaging?activate=true&roundId=" + roundId)
+            fetch("https://thegrunkgames.azurewebsites.net/Game/SetStaging?activate=true&roundId=" + roundId)
                 .then((response) => response.json())
                 .then((json) => PrintStageingRound(json));
         }

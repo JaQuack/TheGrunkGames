@@ -19,57 +19,43 @@ namespace TheGrunkGames.Services
         {
             var games = new List<Game>
             {
-                new Game { Name = "Mario Kart 64", Device = Device.TV },
-                new Game { Name = "Age of Empires 2", Device = Device.PC_Steam },
-                new Game { Name = "NFS: Underground 2", Device = Device.PC_Steam},
-                new Game { Name = "Half life 1", Device = Device.PC_Steam_2 },
-                new Game { Name = "Audiosurf", Device = Device.PC_Couch },
-                new Game { Name = "Doom 2", Device = Device.PC_Couch },
-                new Game { Name = "Fifa 98", Device = Device.TV },
-                new Game { Name = "Tetris Party Deluxe", Device = Device.TV_Wii },
-                new Game { Name = "Dark Messiah of Might and Magic", Device = Device.PC_Steam_2 },
-                new Game { Name = "Mario Tennis", Device = Device.TV_Wii },
                 new Game { Name = "Beerpong", Device = Device.IRL },
-                new Game { Name = "TIMETRIAL", Device = Device.TIMETRIAL}
+                new Game { Name = "Mario Kart 64", Device = Device.TV },
+                new Game { Name = "Mario Strickers (Football)", Device = Device.TV_GameCube },
+                new Game { Name = "Cel Damage Overdrive", Device = Device.TV_GameCube },
+                new Game { Name = "Super Bomber man", Device = Device.TV },
+                new Game { Name = "Trackmania", Device = Device.PC_Steam },
+                new Game { Name = "WC3 - Castle Fight", Device = Device.PC_Steam },
+                new Game { Name = "Bopl Battle", Device = Device.PC_Couch },
+                new Game { Name = "Magequit", Device = Device.PC_Couch },
+                new Game { Name = "Pocket Mini Golf", Device = Device.PC_Couch },
+                new Game { Name = "Unreal Tournament", Device = Device.PC_Steam_2 },
+                new Game { Name = "Mortal Kombat 3", Device = Device.TV },
+                new Game { Name = "Liero", Device = Device.PC_Steam_2 },
+                new Game { Name = "TIMETRIAL", Device = Device.TIMETRIAL }
             };
 
             var teams = new List<Team>()
             {
                 new Team {
                     TeamName = "Scourge of the Goat Sea",
-                    Players = new List<Player> {
-                        new Player { Name = "Player1" },
-                        new Player { Name = "Player2",}
-                    },
-                },
-                new Team {
-                    TeamName = "De Renrakade",
-                    Players = new List<Player> {
-                        new Player { Name = "Player3", },
-                        new Player { Name = "Player4"  }
-                    },
-                },
-                new Team {
-                    TeamName = "Rakabulle",
-                    Players = new List<Player> {
-                        new Player { Name = "Player5" },
-                        new Player { Name = "Player6" }
-                    },
-                },
-                 new Team {
-                    TeamName = "Nicki Minaj's Golden Shower",
-                    Players = new List<Player> {
-                        new Player { Name = "Player9" },
-                        new Player { Name = "Player10" }
-                    },
                 },
                 new Team {
                     TeamName = "Skinkryttarna",
-                    Players = new List<Player> {
-                        new Player { Name = "Player11" },
-                        new Player { Name = "Player12" }
-                    },
+                },
+                new Team {
+                    TeamName = "xX_framstjärtsFals1-;_Xx;noscope",
+                },
+                new Team {
+                    TeamName = "Snöslask",
+                },
+                 new Team {
+                    TeamName = "Nicki Minaj's Golden Shower",
+                },
+                 new Team {
+                    TeamName = "Replacement Team",
                 }
+
             };
 
             Tournament = new Tournament { Teams = teams, Games = games, Rounds = new List<Round>() };
@@ -82,7 +68,7 @@ namespace TheGrunkGames.Services
         }
 
         private List<Round> GetActiveRounds()
-        { 
+        {
             return Tournament.Rounds.Where(x => x.RoundId != 0 && !x.isStaging).ToList();
         }
 
@@ -285,8 +271,8 @@ namespace TheGrunkGames.Services
         {
             var teams = Tournament.Teams;
             var nrGamesToSelect = (int)Math.Floor(teams.Count / 2m);
- 
-            var gamesSortedByLeastPlayed = Tournament.Games.Where(x => x.Device != Device.TIMETRIAL).Select(x => new { game = x, nrPlayed = teams.Sum(y => y.NrTimesHavePlayedGame(x.Name)) } ).OrderBy(x => x.nrPlayed).ToList();
+
+            var gamesSortedByLeastPlayed = Tournament.Games.Where(x => x.Device != Device.TIMETRIAL).Select(x => new { game = x, nrPlayed = teams.Sum(y => y.NrTimesHavePlayedGame(x.Name)) }).OrderBy(x => x.nrPlayed).ToList();
             var games = new List<Game>();
 
             for (var i = 0; i < nrGamesToSelect; i++)
@@ -317,20 +303,35 @@ namespace TheGrunkGames.Services
                 });
             }
 
-            foreach (var game in games)
+            var allPossibleMatchups = new List<KeyValuePair<Team, Team>>();
+            foreach(var team in teams.Where(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
             {
-                var teamsNotYetMatched = teams.Where(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName))).OrderBy(x => x.NrTimesHavePlayedGame(game.Name)).ToList();
-                var team = teamsNotYetMatched.FirstOrDefault();
-                var opponents = teamsNotYetMatched.Skip(1).OrderBy(x => x.NrTimesHavePlayedGame(game.Name) + x.NrTimesPlayedAgainstTeam(team.TeamName) + (x.HasCompetedWithTeamInGame(team.TeamName, game.Name) ? 5 : 0));
-                var opponent = opponents.First();
+                var newMatchups = teams.Where(x => !x.Equals(team) && !(allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(team, x)) || allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(x, team))));
+                foreach (var matchup in newMatchups)
+                { 
+                    allPossibleMatchups.Add(new KeyValuePair<Team, Team>(team,matchup));
+                }
+            }
+
+            var allGamesForAllMatchups = allPossibleMatchups.SelectMany(x => Tournament.Games.Where(x => x.Device != Device.TIMETRIAL).Select(y => new { matchUp = x, game = y, weight = x.Value.NrTimesHavePlayedGame(y.Name)*3 + x.Key.NrTimesHavePlayedGame(y.Name)*3 + x.Value.NrTimesPlayedAgainstTeam(x.Key.TeamName) + (x.Value.HasCompetedWithTeamInGame(x.Key.TeamName, y.Name) ? 50 : 0) })).ToList();
+
+            var bestMatchups = allGamesForAllMatchups.OrderBy(x => x.weight).ToList();
+            
+
+            foreach (var matchtoadd in bestMatchups)
+            {
+                if (matchups.Any(x => x.IsTeamPlaying(matchtoadd.matchUp.Value.TeamName) || x.IsTeamPlaying(matchtoadd.matchUp.Key.TeamName) || x.Game.Device == matchtoadd.game.Device))
+                    continue;
 
                 matchups.Add(new Match
                 {
-                    Game = game,
-                    Team_1_Name = team.TeamName,
-                    Team_2_Name = opponent.TeamName,
+                    Game = matchtoadd.game,
+                    Team_1_Name = matchtoadd.matchUp.Key.TeamName,
+                    Team_2_Name = matchtoadd.matchUp.Value.TeamName,
                     MatchId = matchId++
                 });
+
+                if (matchups.Count() == teams.Count() / 2) break;
             }
 
             if (matchups.Any(x => x.Game == null && !x.IsTimeTrial) || teams.Any(x => !matchups.Any(y => y.Team_1_Name == x.TeamName || y.Team_2_Name == x.TeamName)))
@@ -428,6 +429,13 @@ namespace TheGrunkGames.Services
         {
             Tournament.Rounds.RemoveAll(x => x.isStaging);
             await _storageService.SaveTournament(Tournament);
+        }
+
+        internal async Task GetAndSetHistory(string partitionKey, string rowKey)
+        {
+            var tournament = await _storageService.GetTournament(partitionKey, rowKey);
+            if (tournament == null) return;
+            await SetTournament(tournament);
         }
     }
 }

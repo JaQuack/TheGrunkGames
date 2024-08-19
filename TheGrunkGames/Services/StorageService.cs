@@ -14,14 +14,18 @@ namespace TheGrunkGames.Services
         private readonly TableClient _tableClient;
         public StorageService()
         {
-            var connectionString = "";
-
-            _tableClient = new TableClient(connectionString, "tournamentHistory");
-            _tableClient.CreateIfNotExists();
+            var connectionString = ""; //Add a connection string to use storage feature
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                _tableClient = new TableClient(connectionString, "tournamentHistory");
+                _tableClient.CreateIfNotExists();
+            }
         }
 
         public async Task SaveTournament(Tournament tournament)
         {
+            if (_tableClient == null)
+                return;
             try
             {
                 if (tournament == null)
@@ -53,6 +57,8 @@ namespace TheGrunkGames.Services
 
         public async Task<Tournament> GetTournament(string version, string year = null)
         {
+            if (_tableClient == null)
+                return null;
             try
             {
                 if (string.IsNullOrWhiteSpace(year))

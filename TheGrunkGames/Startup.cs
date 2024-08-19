@@ -36,6 +36,8 @@ namespace TheGrunkGames
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "TheGrunkGames", Version = "v1" });
             });
             services.AddCors();
+            services.AddMvc();
+            services.AddMvcCore();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -59,10 +61,12 @@ namespace TheGrunkGames
                                                         //.WithOrigins("https://localhost:44351")); // Allow only this origin can also have multiple origins separated with comma
                     .AllowCredentials()); // allow credentials
 
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
             });
         }
     }

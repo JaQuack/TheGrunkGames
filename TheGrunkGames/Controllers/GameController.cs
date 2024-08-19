@@ -188,7 +188,7 @@ namespace TheGrunkGames.Controllers
         [HttpPost("ChangeGameForMatch")]
         public async Task<IActionResult> ChangeGameForMatch(int matchId, string gameName)
         {
-            if (matchId == 0 || string.IsNullOrEmpty(gameName) || !await _gameService.ChangeGameForMatch(matchId,gameName))
+            if (matchId == 0 || string.IsNullOrEmpty(gameName) || !await _gameService.ChangeGameForMatch(matchId, gameName))
                 return BadRequest();
             return Ok();
         }
