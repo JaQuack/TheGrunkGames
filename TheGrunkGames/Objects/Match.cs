@@ -27,9 +27,5 @@ namespace TheGrunkGames.Objects
             if (Team_1_Name.Equals(teamName)) return Team_2_Name;
             return Team_1_Name;
         }
-
-        [JsonIgnore]
-        public Dictionary<string, string> Stat { get; set; }
-
     }
 }

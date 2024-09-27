@@ -32,7 +32,7 @@ namespace TheGrunkGames.Controllers
         [HttpGet("GetNextRound")]
         public async Task<string> GetNextRound()
         {
-            var round = await _gameService.GetNextRoundNewLogic();
+            var round = await _gameService.GetNextRound();
             return JsonConvert.SerializeObject(round);
         }
 
@@ -41,7 +41,7 @@ namespace TheGrunkGames.Controllers
         {
             await _gameService.RemoveInactiveRounds();
             //var round = _gameService.GetNextRound();
-            var round = await _gameService.GetNextRoundNewLogic();
+            var round = await _gameService.GetNextRound();
             round.isStaging = true;
             return JsonConvert.SerializeObject(round);
         }

@@ -16,9 +16,10 @@ namespace TheGrunkGames.Objects
         public List<Team> Teams { get; set; }
         public List<Game> Games { get; set; }
         public List<Round> Rounds { get; set; }
-        //public string PartitionKey { get; set; }
-        //public string RowKey { get; set; }
-        //public DateTimeOffset? Timestamp { get; set; }
-        //public ETag ETag { get; set; }
+
+        public bool IsTimeTrial()
+        {
+            return Teams.Count % 2 != 0;
+        }
     }
 }

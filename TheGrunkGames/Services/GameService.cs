@@ -11,7 +11,7 @@ namespace TheGrunkGames.Services
     public class GameService
     {
         private Tournament Tournament;
-        private static Random _random = new Random();
+        private static Random _random = new();
 
         private readonly StorageService _storageService;
 
@@ -19,43 +19,30 @@ namespace TheGrunkGames.Services
         {
             var games = new List<Game>
             {
-                new Game { Name = "Beerpong", Device = Device.IRL },
-                new Game { Name = "Mario Kart 64", Device = Device.TV },
-                new Game { Name = "Mario Strickers (Football)", Device = Device.TV_GameCube },
-                new Game { Name = "Cel Damage Overdrive", Device = Device.TV_GameCube },
-                new Game { Name = "Super Bomber man", Device = Device.TV },
-                new Game { Name = "Trackmania", Device = Device.PC_Steam },
-                new Game { Name = "WC3 - Castle Fight", Device = Device.PC_Steam },
-                new Game { Name = "Bopl Battle", Device = Device.PC_Couch },
-                new Game { Name = "Magequit", Device = Device.PC_Couch },
-                new Game { Name = "Pocket Mini Golf", Device = Device.PC_Couch },
-                new Game { Name = "Unreal Tournament", Device = Device.PC_Steam_2 },
-                new Game { Name = "Mortal Kombat 3", Device = Device.TV },
-                new Game { Name = "Liero", Device = Device.PC_Steam_2 },
-                new Game { Name = "TIMETRIAL", Device = Device.TIMETRIAL }
+                new() { Name = "Beerpong", Device = Device.IRL },
+                new() { Name = "Mario Kart 64", Device = Device.TV },
+                new() { Name = "Mario Strickers (Football)", Device = Device.TV_GameCube },
+                new() { Name = "Cel Damage Overdrive", Device = Device.TV_GameCube },
+                new() { Name = "Super Bomber man", Device = Device.TV },
+                new() { Name = "Trackmania", Device = Device.PC_Steam },
+                new() { Name = "WC3 - Castle Fight", Device = Device.PC_Steam },
+                new() { Name = "Bopl Battle", Device = Device.PC_Couch },
+                new() { Name = "Magequit", Device = Device.PC_Couch },
+                new() { Name = "Pocket Mini Golf", Device = Device.PC_Couch },
+                new() { Name = "Unreal Tournament", Device = Device.PC_Steam_2 },
+                new() { Name = "Mortal Kombat 3", Device = Device.TV },
+                new() { Name = "Liero", Device = Device.PC_Steam_2 },
+                new() { Name = "TIMETRIAL", Device = Device.TIMETRIAL }
             };
 
             var teams = new List<Team>()
             {
-                new Team {
-                    TeamName = "Scourge of the Goat Sea",
-                },
-                new Team {
-                    TeamName = "Skinkryttarna",
-                },
-                new Team {
-                    TeamName = "xX_framstjärtsFals1-;_Xx;noscope",
-                },
-                new Team {
-                    TeamName = "Snöslask",
-                },
-                 new Team {
-                    TeamName = "Nicki Minaj's Golden Shower",
-                },
-                 new Team {
-                    TeamName = "Replacement Team",
-                }
-
+                new() { TeamName = "Scourge of the Goat Sea" },
+                new() { TeamName = "Skinkryttarna" },
+                new() { TeamName = "xX_framstjärtsFals1-;_Xx;noscope" },
+                new() { TeamName = "Snöslask" },
+                new() { TeamName = "Nicki Minaj's Golden Shower" },
+                new() { TeamName = "Replacement Team" }
             };
 
             Tournament = new Tournament { Teams = teams, Games = games, Rounds = new List<Round>() };
@@ -168,27 +155,6 @@ namespace TheGrunkGames.Services
             return teamsStats;
         }
 
-        internal List<RoundStats> GetRoundStats()
-        {
-            var rounds = GetActiveRounds();
-            var roundStats = new List<RoundStats>();
-            foreach (var round in rounds)
-            {
-                var roundstat = new RoundStats
-                {
-                    Matches = new List<MatchStat>(),
-                    RoundId = round.RoundId
-                };
-
-                foreach (var match in round.Matches)
-                {
-                    roundstat.Matches.Add(new MatchStat { Id = match.MatchId, Stats = match.Stat });
-                }
-                roundStats.Add(roundstat);
-            }
-            return roundStats;
-        }
-
         internal bool TeamExists(string teamName)
         {
             return Tournament.Teams.FirstOrDefault(x => x.TeamName.Equals(teamName, StringComparison.InvariantCultureIgnoreCase)) != null;
@@ -219,79 +185,15 @@ namespace TheGrunkGames.Services
 
         public async Task<Round> GetNextRound()
         {
-            var teams = Tournament.Teams;
-
-            teams = teams.OrderByDescending(x => x.CurrentScore).ToList();
-            var round = new Round
-            {
-                RoundId = GetActiveRounds().Count == 0 ? 1 : GetActiveRounds().Max(x => x.RoundId) + 1
-            };
-            var matchups = new List<Match>();
-            var matchId = GetNextMatchId();
-            if (teams.Count % 2 != 0)
-            {
-                var minTimeTrial = teams.Min(x => x.TimeTrialsPlayed());
-                var teamsToChooseFrom = teams.Where(x => x.TimeTrialsPlayed() == minTimeTrial);
-                var teamToPlayTimeTrial = teamsToChooseFrom.ElementAt(_random.Next(teamsToChooseFrom.Count()));
-
-                matchups.Add(new Match
-                {
-                    Team_1_Name = teamToPlayTimeTrial.TeamName,
-                    IsTimeTrial = true,
-                    MatchId = matchId++
-                });
-            }
-
-            foreach (var team in teams.OrderBy(x => Guid.NewGuid()))
-            {
-                if (matchups.Any(y => y.IsTeamPlaying(team.TeamName)))
-                    continue;
-                var teamsNotYetMatched = teams.Where(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName)) && !x.TeamName.Equals(team.TeamName)).ToList();
-
-                var minGamesPlayedAgainstSame = team.NrTimesPlayedAgainstTeams(teamsNotYetMatched);
-                var teamsToChooseFrom = teamsNotYetMatched.Where(x => x.NrTimesPlayedAgainstTeam(team.TeamName) == minGamesPlayedAgainstSame).ToList();
-                var opponent = (teamsToChooseFrom.FirstOrDefault() ?? teamsNotYetMatched.FirstOrDefault()) ?? throw new Exception("Unable to find opponent!");
-                matchups.Add(new Match
-                {
-                    Team_1_Name = team.TeamName,
-                    Team_2_Name = opponent.TeamName,
-                    MatchId = matchId++
-                });
-            }
-
-            AssignGames(matchups);
-            round.Matches = matchups;
-            Tournament.Rounds.Add(round);
-            await _storageService.SaveTournament(Tournament);
-            return round;
-        }
-
-
-        public async Task<Round> GetNextRoundNewLogic()
-        {
-            var teams = Tournament.Teams;
-            var nrGamesToSelect = (int)Math.Floor(teams.Count / 2m);
-
-            var gamesSortedByLeastPlayed = Tournament.Games.Where(x => x.Device != Device.TIMETRIAL).Select(x => new { game = x, nrPlayed = teams.Sum(y => y.NrTimesHavePlayedGame(x.Name)) }).OrderBy(x => x.nrPlayed).ToList();
-            var games = new List<Game>();
-
-            for (var i = 0; i < nrGamesToSelect; i++)
-            {
-                var game = gamesSortedByLeastPlayed.FirstOrDefault(x => !games.Any(y => y.Device == x.game.Device));
-                games.Add(game.game);
-            }
-
-            var round = new Round
-            {
-                RoundId = GetActiveRounds().Count == 0 ? 1 : GetActiveRounds().Max(x => x.RoundId) + 1
-            };
+            var round = new Round { RoundId = GetActiveRounds().Count == 0 ? 1 : GetActiveRounds().Max(x => x.RoundId) + 1 };
+            var nrGamesToSelect = (int)Math.Floor(Tournament.Teams.Count / 2m);
             var matchups = new List<Match>();
             var matchId = GetNextMatchId();
 
-            if (teams.Count % 2 != 0)
+            if (Tournament.IsTimeTrial())
             {
-                var minTimeTrial = teams.Min(x => x.TimeTrialsPlayed());
-                var teamsToChooseFrom = teams.Where(x => x.TimeTrialsPlayed() == minTimeTrial);
+                var minTimeTrial = Tournament.Teams.Min(x => x.TimeTrialsPlayed());
+                var teamsToChooseFrom = Tournament.Teams.Where(x => x.TimeTrialsPlayed() == minTimeTrial);
                 var teamToPlayTimeTrial = teamsToChooseFrom.ElementAt(_random.Next(teamsToChooseFrom.Count()));
 
                 matchups.Add(new Match
@@ -304,24 +206,29 @@ namespace TheGrunkGames.Services
             }
 
             var allPossibleMatchups = new List<KeyValuePair<Team, Team>>();
-            foreach(var team in teams.Where(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
+            foreach (var team in Tournament.Teams.Where(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
             {
-                var newMatchups = teams.Where(x => !x.Equals(team) && !(allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(team, x)) || allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(x, team))));
+                var newMatchups = Tournament.Teams.Where(x => !x.Equals(team) && !(allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(team, x)) || allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(x, team))));
                 foreach (var matchup in newMatchups)
-                { 
-                    allPossibleMatchups.Add(new KeyValuePair<Team, Team>(team,matchup));
+                {
+                    allPossibleMatchups.Add(new KeyValuePair<Team, Team>(team, matchup));
                 }
             }
 
-            var allGamesForAllMatchups = allPossibleMatchups.SelectMany(x => Tournament.Games.Where(x => x.Device != Device.TIMETRIAL).Select(y => new { matchUp = x, game = y, weight = x.Value.NrTimesHavePlayedGame(y.Name)*3 + x.Key.NrTimesHavePlayedGame(y.Name)*3 + x.Value.NrTimesPlayedAgainstTeam(x.Key.TeamName) + (x.Value.HasCompetedWithTeamInGame(x.Key.TeamName, y.Name) ? 50 : 0) })).ToList();
+            var allGamesForAllMatchups = allPossibleMatchups
+                 .SelectMany(x => Tournament.Games.Where(x => x.Device != Device.TIMETRIAL)
+                    .Select(y => new { matchUp = x, game = y, weight = CalculateWeight(x, y) }))
+                    .ToList();
 
-            var bestMatchups = allGamesForAllMatchups.OrderBy(x => x.weight).ToList();
-            
-
-            foreach (var matchtoadd in bestMatchups)
+            foreach (var matchtoadd in allGamesForAllMatchups.OrderBy(x => x.weight))
             {
-                if (matchups.Any(x => x.IsTeamPlaying(matchtoadd.matchUp.Value.TeamName) || x.IsTeamPlaying(matchtoadd.matchUp.Key.TeamName) || x.Game.Device == matchtoadd.game.Device))
+                //skip occupied game/device/team
+                if (matchups.Any(x => x.IsTeamPlaying(matchtoadd.matchUp.Value.TeamName)
+                    || x.IsTeamPlaying(matchtoadd.matchUp.Key.TeamName)
+                    || x.Game.Device == matchtoadd.game.Device))
+                {
                     continue;
+                }
 
                 matchups.Add(new Match
                 {
@@ -331,10 +238,12 @@ namespace TheGrunkGames.Services
                     MatchId = matchId++
                 });
 
-                if (matchups.Count() == teams.Count() / 2) break;
+                //if all teams have a matchup we no longer need to loop
+                if (Tournament.Teams.All(x => matchups.Any(y => y.IsTeamPlaying(x.TeamName)))) 
+                    break;
             }
 
-            if (matchups.Any(x => x.Game == null && !x.IsTimeTrial) || teams.Any(x => !matchups.Any(y => y.Team_1_Name == x.TeamName || y.Team_2_Name == x.TeamName)))
+            if (matchups.Any(x => x.Game == null && !x.IsTimeTrial) || Tournament.Teams.Any(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
             {
                 throw new Exception("ASSIGN GAMES LOGIC ERROR!!!");
             }
@@ -345,36 +254,13 @@ namespace TheGrunkGames.Services
             return round;
         }
 
-
-        private void AssignGames(List<Match> matches)
+        private static int CalculateWeight(KeyValuePair<Team, Team> x, Game y)
         {
-            var games = Tournament.Games.Where(x => x.Device != Device.TIMETRIAL);
-            foreach (var matchup in matches)
-            {
-                matchup.Stat = new Dictionary<string, string>();
-                if (matchup.IsTimeTrial)
-                {
-                    matchup.Game = Tournament.Games.FirstOrDefault(x => x.Device == Device.TIMETRIAL);
-                    continue;
-                }
-                else
-                {
-                    var team1 = GetTeamByName(matchup.Team_1_Name);
-                    var team2 = GetTeamByName(matchup.Team_2_Name);
-                    var gamesAvalible = games.Where(x => DeviceAndGameAvalible(matches, x)).OrderBy(x => Guid.NewGuid()).ToList();
-                    matchup.Stat.Add(nameof(gamesAvalible) + "_1", JsonConvert.SerializeObject(gamesAvalible));
-                    gamesAvalible = gamesAvalible.Where(x => !team1.HasCompetedWithTeamInGame(team2.TeamName, x.Name)).ToList();
-                    matchup.Stat.Add(nameof(gamesAvalible) + "_2", JsonConvert.SerializeObject(gamesAvalible));
-                    gamesAvalible = gamesAvalible.OrderBy(x => team1.NrTimesHavePlayedGame(x.Name) + team2.NrTimesHavePlayedGame(x.Name)).ToList();
-                    matchup.Stat.Add(nameof(gamesAvalible) + "_3", JsonConvert.SerializeObject(gamesAvalible));
-
-                    matchup.Game = gamesAvalible.FirstOrDefault();
-                }
-            }
-            if (matches.Any(x => x.Game == null && !x.IsTimeTrial))
-            {
-                throw new Exception("ASSIGN GAMES LOGIC ERROR!!!");
-            }
+            var weight = x.Value.NrTimesHavePlayedGame(y.Name) * 3; //nrTimes teams have played game
+            weight += x.Key.NrTimesHavePlayedGame(y.Name) * 3; //nrTimes teams have played game
+            weight += x.Value.NrTimesPlayedAgainstTeam(x.Key.TeamName); //nrTimes teams have met eachother
+            weight += x.Value.HasCompetedWithTeamInGame(x.Key.TeamName, y.Name) ? 50 : 0; //nr times teams met eachother in game (high weight for it to basically never happend)
+            return weight;
         }
 
         public Tournament GetTournament()
