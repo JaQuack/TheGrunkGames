@@ -1,71 +1,166 @@
-﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TheGrunkGames.Objects;
+using TheGrunkGames.Models.TournamentModels;
 
 namespace TheGrunkGames.Services
 {
     public class GameService
     {
-        private Tournament Tournament;
-        private static Random _random = new();
-
+        private Tournament _tournament;
+        private static readonly Random _random = new();
         private readonly StorageService _storageService;
 
         public GameService(StorageService storageService)
         {
-            var games = new List<Game>
+            _tournament = new Tournament
             {
-                new() { Name = "Beerpong", Device = Device.IRL },
-                new() { Name = "Mario Kart 64", Device = Device.TV },
-                new() { Name = "Mario Strickers (Football)", Device = Device.TV_GameCube },
-                new() { Name = "Cel Damage Overdrive", Device = Device.TV_GameCube },
-                new() { Name = "Super Bomber man", Device = Device.TV },
-                new() { Name = "Trackmania", Device = Device.PC_Steam },
-                new() { Name = "WC3 - Castle Fight", Device = Device.PC_Steam },
-                new() { Name = "Bopl Battle", Device = Device.PC_Couch },
-                new() { Name = "Magequit", Device = Device.PC_Couch },
-                new() { Name = "Pocket Mini Golf", Device = Device.PC_Couch },
-                new() { Name = "Unreal Tournament", Device = Device.PC_Steam_2 },
-                new() { Name = "Mortal Kombat 3", Device = Device.TV },
-                new() { Name = "Liero", Device = Device.PC_Steam_2 },
-                new() { Name = "TIMETRIAL", Device = Device.TIMETRIAL }
+                Teams = GetDefaultTeams(),
+                Games = GetDefaultGames(),
+                Rounds = []
             };
-
-            var teams = new List<Team>()
-            {
-                new() { TeamName = "Scourge of the Goat Sea" },
-                new() { TeamName = "Skinkryttarna" },
-                new() { TeamName = "xX_framstjärtsFals1-;_Xx;noscope" },
-                new() { TeamName = "Snöslask" },
-                new() { TeamName = "Nicki Minaj's Golden Shower" },
-                new() { TeamName = "Replacement Team" }
-            };
-
-            Tournament = new Tournament { Teams = teams, Games = games, Rounds = new List<Round>() };
             _storageService = storageService;
         }
 
-        internal Match GetMatch(int matchId)
+        #region Tournament Management
+
+        /// <summary>
+        /// Gets the current tournament.
+        /// </summary>
+        public Tournament GetTournament() => _tournament;
+
+        /// <summary>
+        /// Sets the tournament and persists it.
+        /// </summary>
+        internal async Task SetTournament(Tournament newTournament)
         {
-            return GetActiveRounds().SelectMany(x => x.Matches).FirstOrDefault(y => y.MatchId == matchId);
+            _tournament = newTournament;
+            await _storageService.SaveTournament(_tournament);
         }
 
-        private List<Round> GetActiveRounds()
+        #endregion
+
+        #region Team Management
+
+        /// <summary>
+        /// Adds a team to the tournament.
+        /// </summary>
+        internal async Task AddTeam(Team team)
         {
-            return Tournament.Rounds.Where(x => x.RoundId != 0 && !x.isStaging).ToList();
+            _tournament.Teams.Add(team);
+            await _storageService.SaveTournament(_tournament);
         }
 
+        /// <summary>
+        /// Sets the list of teams for the tournament.
+        /// </summary>
+        public async Task SetTeams(List<Team> teams)
+        {
+            _tournament.Teams = teams;
+            await _storageService.SaveTournament(_tournament);
+        }
 
+        /// <summary>
+        /// Checks if a team exists by name.
+        /// </summary>
+        internal bool TeamExists(string teamName) =>
+            _tournament.Teams.Any(x => x.TeamName.Equals(teamName, StringComparison.InvariantCultureIgnoreCase));
+
+        private Team GetTeamByName(string name) =>
+            _tournament.Teams.FirstOrDefault(x => x.TeamName.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+
+        #endregion
+
+        #region Game Management
+
+        /// <summary>
+        /// Adds a game to the tournament.
+        /// </summary>
+        internal async Task AddGame(Game game)
+        {
+            _tournament.Games.Add(game);
+            await _storageService.SaveTournament(_tournament);
+        }
+
+        /// <summary>
+        /// Sets the list of games for the tournament.
+        /// </summary>
+        internal async Task SetGames(List<Game> games)
+        {
+            _tournament.Games = games;
+            await _storageService.SaveTournament(_tournament);
+        }
+
+        #endregion
+
+        #region Round Management
+
+        /// <summary>
+        /// Gets the current round.
+        /// </summary>
+        public Round GetCurrentRound() =>
+            _tournament.Rounds.OrderByDescending(y => y.RoundId).FirstOrDefault(x => !x.IsCompleted() && !x.isStaging);
+
+        /// <summary>
+        /// Gets a round by its ID.
+        /// </summary>
+        internal Round GetRound(int roundId) =>
+            _tournament.Rounds.FirstOrDefault(x => x.RoundId == roundId);
+
+        /// <summary>
+        /// Sets a round, replacing any existing round with the same ID.
+        /// </summary>
+        internal async Task SetRound(Round round)
+        {
+            var existingRound = GetRound(round.RoundId);
+            _tournament.Rounds.Remove(existingRound);
+            _tournament.Rounds.Add(round);
+            await _storageService.SaveTournament(_tournament);
+        }
+
+        /// <summary>
+        /// Deletes a round by its ID.
+        /// </summary>
+        internal async Task DeleteRound(int roundId)
+        {
+            var round = GetRound(roundId);
+            _tournament.Rounds.Remove(round);
+            await _storageService.SaveTournament(_tournament);
+        }
+
+        /// <summary>
+        /// Removes all inactive (staging) rounds.
+        /// </summary>
+        internal async Task RemoveInactiveRounds()
+        {
+            _tournament.Rounds.RemoveAll(x => x.isStaging);
+            await _storageService.SaveTournament(_tournament);
+        }
+
+        private List<Round> GetActiveRounds() =>
+            _tournament.Rounds.Where(x => x.RoundId != 0 && !x.isStaging).ToList();
+
+        #endregion
+
+        #region Match Management
+
+        /// <summary>
+        /// Gets a match by its ID.
+        /// </summary>
+        internal Match GetMatch(int matchId) =>
+            GetActiveRounds().SelectMany(x => x.Matches).FirstOrDefault(y => y.MatchId == matchId);
+
+        /// <summary>
+        /// Completes a match and updates team stats.
+        /// </summary>
         internal async Task CompleteMatch(MatchResult result)
         {
             var match = GetMatch(result.MatchId);
             match.ScoreTeam1 = result.Team1Score;
             match.ScoreTeam2 = result.Team2Score;
-            match.Compleated = true;
+            match.HasCompleted = true;
+
             var team1 = GetTeamByName(match.Team_1_Name);
             team1.AddMatch(match);
 
@@ -74,254 +169,245 @@ namespace TheGrunkGames.Services
                 var team2 = GetTeamByName(match.Team_2_Name);
                 team2.AddMatch(match);
             }
-            await _storageService.SaveTournament(Tournament);
+            await _storageService.SaveTournament(_tournament);
         }
 
-        private Team GetTeamByName(string name)
-        {
-            return Tournament.Teams.FirstOrDefault(x => x.TeamName.Equals(name, StringComparison.InvariantCultureIgnoreCase));
-        }
-
-        internal async Task SetRound(Round round)
-        {
-            var existingRound = GetRound(round.RoundId);
-            Tournament.Rounds.Remove(existingRound);
-            Tournament.Rounds.Add(round);
-            await _storageService.SaveTournament(Tournament);
-        }
-
+        /// <summary>
+        /// Changes the game for a match.
+        /// </summary>
         internal async Task<bool> ChangeGameForMatch(int matchId, string gameName)
         {
             var match = GetMatch(matchId);
-            var game = Tournament.Games.FirstOrDefault(x => x.Name.Equals(gameName, StringComparison.InvariantCultureIgnoreCase));
+            var game = _tournament.Games.FirstOrDefault(x => x.Name.Equals(gameName, StringComparison.InvariantCultureIgnoreCase));
             if (match == null || game == null)
                 return false;
             match.Game = game;
-            await _storageService.SaveTournament(Tournament);
-            return false;
+            await _storageService.SaveTournament(_tournament);
+            return true;
         }
 
+        /// <summary>
+        /// Changes the teams for a match.
+        /// </summary>
         internal async Task ChangeTeamsForMatch(int matchId, string team1Name, string team2Name)
         {
             var match = GetMatch(matchId);
             var team1 = GetTeamByName(team1Name);
             var team2 = GetTeamByName(team2Name);
             if (team1 == null || team2 == null)
-                throw new Exception("You fuckedup the teamnames STUPID!");
+                throw new ArgumentException("Invalid team names provided.");
             match.Team_1_Name = team1.TeamName;
             match.Team_2_Name = team2.TeamName;
-            await _storageService.SaveTournament(Tournament);
+            await _storageService.SaveTournament(_tournament);
         }
 
-        internal Round GetRound(int roundId)
+        private int GetNextMatchId()
         {
-            return Tournament.Rounds.FirstOrDefault(x => x.RoundId == roundId);
+            var matches = _tournament.Rounds.SelectMany(x => x.Matches);
+            return !matches.Any() ? 1 : matches.Max(x => x.MatchId) + 1;
         }
 
-        internal async Task AddGame(Game game)
-        {
-            Tournament.Games.Add(game);
-            await _storageService.SaveTournament(Tournament);
-        }
+        #endregion
 
-        internal async Task SetGames(List<Game> games)
-        {
-            Tournament.Games = games;
-            await _storageService.SaveTournament(Tournament);
-        }
+        #region Stats & Standings
 
-        internal List<TeamStanding> GetTeamStandings()
-        {
-            var teams = Tournament.Teams;
-            return teams.Select(x => new TeamStanding { TeamName = x.TeamName, TeamScore = x.CurrentScore }).OrderByDescending(x => x.TeamScore).ToList();
-        }
+        /// <summary>
+        /// Gets team standings.
+        /// </summary>
+        internal List<TeamStanding> GetTeamStandings() =>
+            _tournament.Teams
+                .Select(x => new TeamStanding { TeamName = x.TeamName, TeamScore = x.CurrentScore })
+                .OrderByDescending(x => x.TeamScore)
+                .ToList();
 
+        /// <summary>
+        /// Gets team statistics.
+        /// </summary>
         internal List<TeamStats> GetTeamStats()
         {
-            var teams = Tournament.Teams;
             var teamsStats = new List<TeamStats>();
-            foreach (var team in teams)
+            foreach (var team in _tournament.Teams)
             {
                 var teamsPlayedAgainst = team.MatchesPlayed.Select(x => x.GetOpponentsName(team.TeamName)).Distinct();
                 var gamesPlayed = team.MatchesPlayed.Select(x => x.Game.Name).Distinct();
                 var teamStats = new TeamStats
                 {
                     TeamName = team.TeamName,
-                    PlayedAgainstTeam = teamsPlayedAgainst.Select(x => new KeyValuePair<string, int>(x, team.MatchesPlayed.Sum(y => y.IsTeamPlaying(x) ? 1 : 0))).OrderByDescending(x => x.Value).ToList(),
-                    PlayedGames = gamesPlayed.Select(x => new KeyValuePair<string, int>(x, team.MatchesPlayed.Sum(y => y.Game.Name.Equals(x) ? 1 : 0))).OrderByDescending(x => x.Value).ToList(),
+                    PlayedAgainstTeam = teamsPlayedAgainst
+                        .Select(x => new KeyValuePair<string, int>(x, team.MatchesPlayed.Count(y => y.IsTeamPlaying(x))))
+                        .OrderByDescending(x => x.Value)
+                        .ToList(),
+                    PlayedGames = gamesPlayed
+                        .Select(x => new KeyValuePair<string, int>(x, team.MatchesPlayed.Count(y => y.Game.Name.Equals(x))))
+                        .OrderByDescending(x => x.Value)
+                        .ToList(),
                 };
                 teamsStats.Add(teamStats);
             }
             return teamsStats;
         }
 
-        internal bool TeamExists(string teamName)
+        /// <summary>
+        /// Adds extra points to a team.
+        /// </summary>
+        public async Task AddExtraPoints(string teamName, int points)
         {
-            return Tournament.Teams.FirstOrDefault(x => x.TeamName.Equals(teamName, StringComparison.InvariantCultureIgnoreCase)) != null;
+            var team = GetTeamByName(teamName);
+            if (team != null)
+            {
+                team.ExtraPoints += points;
+                await _storageService.SaveTournament(_tournament);
+            }
         }
 
-        internal async Task AddTeam(Team team)
-        {
-            Tournament.Teams.Add(team);
-            await _storageService.SaveTournament(Tournament);
-        }
+        #endregion
 
-        public async Task SetTeams(List<Team> teams)
-        {
-            Tournament.Teams = teams;
-            await _storageService.SaveTournament(Tournament);
-        }
+        #region Round Generation
 
-        internal async Task SetTournament(Tournament newTornament)
-        {
-            Tournament = newTornament;
-            await _storageService.SaveTournament(Tournament);
-        }
-
-        public Round GetCurrentRound()
-        {
-            return Tournament.Rounds.OrderByDescending(y => y.RoundId).FirstOrDefault(x => !x.IsCompleted() && !x.isStaging);
-        }
-
+        /// <summary>
+        /// Generates and adds the next round.
+        /// </summary>
         public async Task<Round> GetNextRound()
         {
-            var round = new Round { RoundId = GetActiveRounds().Count == 0 ? 1 : GetActiveRounds().Max(x => x.RoundId) + 1 };
-            var nrGamesToSelect = (int)Math.Floor(Tournament.Teams.Count / 2m);
+            var round = new Round
+            {
+                RoundId = GetActiveRounds().Count == 0 ? 1 : GetActiveRounds().Max(x => x.RoundId) + 1
+            };
+            var matchups = GenerateMatchups(round.RoundId);
+            round.Matches = matchups;
+            _tournament.Rounds.Add(round);
+            await _storageService.SaveTournament(_tournament);
+            return round;
+        }
+
+        private List<Match> GenerateMatchups(int roundId)
+        {
             var matchups = new List<Match>();
             var matchId = GetNextMatchId();
 
-            if (Tournament.IsTimeTrial())
+            if (_tournament.IsTimeTrial())
             {
-                var minTimeTrial = Tournament.Teams.Min(x => x.TimeTrialsPlayed());
-                var teamsToChooseFrom = Tournament.Teams.Where(x => x.TimeTrialsPlayed() == minTimeTrial);
-                var teamToPlayTimeTrial = teamsToChooseFrom.ElementAt(_random.Next(teamsToChooseFrom.Count()));
+                var minTimeTrial = _tournament.Teams.Min(x => x.TimeTrialsPlayed());
+                var teamsToChooseFrom = _tournament.Teams.Where(x => x.TimeTrialsPlayed() == minTimeTrial).ToList();
+                var teamToPlayTimeTrial = teamsToChooseFrom[_random.Next(teamsToChooseFrom.Count)];
 
                 matchups.Add(new Match
                 {
                     Team_1_Name = teamToPlayTimeTrial.TeamName,
                     IsTimeTrial = true,
-                    Game = Tournament.Games.FirstOrDefault(x => x.Device == Device.TIMETRIAL),
+                    Game = _tournament.Games.FirstOrDefault(x => x.Device == Device.TIMETRIAL),
                     MatchId = matchId++
                 });
             }
 
-            var allPossibleMatchups = new List<KeyValuePair<Team, Team>>();
-            foreach (var team in Tournament.Teams.Where(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
-            {
-                var newMatchups = Tournament.Teams.Where(x => !x.Equals(team) && !(allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(team, x)) || allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(x, team))));
-                foreach (var matchup in newMatchups)
-                {
-                    allPossibleMatchups.Add(new KeyValuePair<Team, Team>(team, matchup));
-                }
-            }
-
+            var allPossibleMatchups = GetAllPossibleMatchups(matchups);
             var allGamesForAllMatchups = allPossibleMatchups
-                 .SelectMany(x => Tournament.Games.Where(x => x.Device != Device.TIMETRIAL)
-                    .Select(y => new { matchUp = x, game = y, weight = CalculateWeight(x, y) }))
-                    .ToList();
+                .SelectMany(x => _tournament.Games.Where(g => g.Device != Device.TIMETRIAL)
+                    .Select(game => new { matchUp = x, game, weight = CalculateWeight(x, game) }))
+                .ToList();
 
-            foreach (var matchtoadd in allGamesForAllMatchups.OrderBy(x => x.weight))
+            foreach (var matchToAdd in allGamesForAllMatchups.OrderBy(x => x.weight))
             {
-                //skip occupied game/device/team
-                if (matchups.Any(x => x.IsTeamPlaying(matchtoadd.matchUp.Value.TeamName)
-                    || x.IsTeamPlaying(matchtoadd.matchUp.Key.TeamName)
-                    || x.Game.Device == matchtoadd.game.Device))
+                if (matchups.Any(x =>
+                    x.IsTeamPlaying(matchToAdd.matchUp.Value.TeamName) ||
+                    x.IsTeamPlaying(matchToAdd.matchUp.Key.TeamName) ||
+                    x.Game.Device == matchToAdd.game.Device))
                 {
                     continue;
                 }
 
                 matchups.Add(new Match
                 {
-                    Game = matchtoadd.game,
-                    Team_1_Name = matchtoadd.matchUp.Key.TeamName,
-                    Team_2_Name = matchtoadd.matchUp.Value.TeamName,
+                    Game = matchToAdd.game,
+                    Team_1_Name = matchToAdd.matchUp.Key.TeamName,
+                    Team_2_Name = matchToAdd.matchUp.Value.TeamName,
                     MatchId = matchId++
                 });
 
-                //if all teams have a matchup we no longer need to loop
-                if (Tournament.Teams.All(x => matchups.Any(y => y.IsTeamPlaying(x.TeamName)))) 
+                if (_tournament.Teams.All(x => matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
                     break;
             }
 
-            if (matchups.Any(x => x.Game == null && !x.IsTimeTrial) || Tournament.Teams.Any(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
+            if (matchups.Any(x => x.Game == null && !x.IsTimeTrial) ||
+                _tournament.Teams.Any(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
             {
-                throw new Exception("ASSIGN GAMES LOGIC ERROR!!!");
+                throw new InvalidOperationException("Failed to assign games to all teams.");
             }
 
-            round.Matches = matchups;
-            Tournament.Rounds.Add(round);
-            await _storageService.SaveTournament(Tournament);
-            return round;
+            return matchups;
         }
 
-        private static int CalculateWeight(KeyValuePair<Team, Team> x, Game y)
+        private List<KeyValuePair<Team, Team>> GetAllPossibleMatchups(List<Match> existingMatchups)
         {
-            var weight = x.Value.NrTimesHavePlayedGame(y.Name) * 3; //nrTimes teams have played game
-            weight += x.Key.NrTimesHavePlayedGame(y.Name) * 3; //nrTimes teams have played game
-            weight += x.Value.NrTimesPlayedAgainstTeam(x.Key.TeamName); //nrTimes teams have met eachother
-            weight += x.Value.HasCompetedWithTeamInGame(x.Key.TeamName, y.Name) ? 50 : 0; //nr times teams met eachother in game (high weight for it to basically never happend)
+            var allPossibleMatchups = new List<KeyValuePair<Team, Team>>();
+            foreach (var team in _tournament.Teams.Where(x => !existingMatchups.Any(y => y.IsTeamPlaying(x.TeamName))))
+            {
+                var newMatchups = _tournament.Teams.Where(x => !x.Equals(team) &&
+                    !(allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(team, x)) ||
+                      allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(x, team))));
+                foreach (var matchup in newMatchups)
+                {
+                    allPossibleMatchups.Add(new KeyValuePair<Team, Team>(team, matchup));
+                }
+            }
+            return allPossibleMatchups;
+        }
+
+        private static int CalculateWeight(KeyValuePair<Team, Team> teams, Game game)
+        {
+            var weight = teams.Value.NrTimesHavePlayedGame(game.Name) * 3;
+            weight += teams.Key.NrTimesHavePlayedGame(game.Name) * 3;
+            weight += teams.Value.NrTimesPlayedAgainstTeam(teams.Key.TeamName);
+            weight += teams.Value.HasCompetedWithTeamInGame(teams.Key.TeamName, game.Name) ? 50 : 0;
             return weight;
         }
 
-        public Tournament GetTournament()
-        {
-            return Tournament;
-        }
+        #endregion
 
-        private bool DeviceAndGameAvalible(List<Match> matches, Game game)
-        {
-            var deviceAndGameAvalible = true;
-            if (game.Device == Device.TV)
-            {
-                if (game.Name == "Tetris Party Deluxe" || game.Name == "Mario Tennis")
-                {
-                    deviceAndGameAvalible = !matches.Any(x => (x.Game?.Name ?? string.Empty).Equals(game.Name)) && matches.Count(x => (x.Game?.Device ?? Device.Undefined) == game.Device) < 2;
-                }
-                else
-                {
-                    deviceAndGameAvalible = matches.Count(x => (x.Game?.Device ?? Device.Undefined) == game.Device) < 2;
-                }
-            }
-            else
-            {
-                deviceAndGameAvalible = !matches.Any(x => (x.Game?.Device ?? Device.Undefined) == game.Device);
-            }
-            return deviceAndGameAvalible;
-        }
+        #region History
 
-        private int GetNextMatchId()
-        {
-            var matches = Tournament.Rounds.SelectMany(x => x.Matches);
-            if (!matches.Any())
-                return 1;
-            return matches.Max(x => x.MatchId) + 1;
-        }
-
-        public async Task AddExtraPoints(string teamName, int points)
-        {
-            var team = Tournament.Teams.FirstOrDefault(x => x.TeamName.Equals(teamName, StringComparison.InvariantCultureIgnoreCase));
-            team.ExtraPoints += points;
-            await _storageService.SaveTournament(Tournament);
-        }
-
-        internal async Task DeleteRound(int v)
-        {
-            var round = GetRound(v);
-            Tournament.Rounds.Remove(round);
-            await _storageService.SaveTournament(Tournament);
-        }
-
-        internal async Task RemoveInactiveRounds()
-        {
-            Tournament.Rounds.RemoveAll(x => x.isStaging);
-            await _storageService.SaveTournament(Tournament);
-        }
-
+        /// <summary>
+        /// Loads tournament history and sets it.
+        /// </summary>
         internal async Task GetAndSetHistory(string partitionKey, string rowKey)
         {
             var tournament = await _storageService.GetTournament(partitionKey, rowKey);
-            if (tournament == null) return;
-            await SetTournament(tournament);
+            if (tournament != null)
+                await SetTournament(tournament);
         }
+
+        #endregion
+
+        #region Helpers
+
+        private static List<Game> GetDefaultGames() => new()
+    {
+        new() { Name = "Beerpong", Device = Device.IRL },
+        new() { Name = "Mario Kart 64", Device = Device.TV },
+        new() { Name = "Mario Strickers (Football)", Device = Device.TV_GameCube },
+        new() { Name = "Cel Damage Overdrive", Device = Device.TV_GameCube },
+        new() { Name = "Super Bomber man", Device = Device.TV },
+        new() { Name = "Trackmania", Device = Device.PC_Steam },
+        new() { Name = "WC3 - Castle Fight", Device = Device.PC_Steam },
+        new() { Name = "Bopl Battle", Device = Device.PC_Couch },
+        new() { Name = "Magequit", Device = Device.PC_Couch },
+        new() { Name = "Pocket Mini Golf", Device = Device.PC_Couch },
+        new() { Name = "Unreal Tournament", Device = Device.PC_Steam_2 },
+        new() { Name = "Mortal Kombat 3", Device = Device.TV },
+        new() { Name = "Liero", Device = Device.PC_Steam_2 },
+        new() { Name = "TIMETRIAL", Device = Device.TIMETRIAL }
+    };
+
+        private static List<Team> GetDefaultTeams() => new()
+    {
+        new() { TeamName = "Scourge of the Goat Sea" },
+        new() { TeamName = "Skinkryttarna" },
+        new() { TeamName = "xX_framstjärtsFals1-;_Xx;noscope" },
+        new() { TeamName = "Snöslask" },
+        new() { TeamName = "Nicki Minaj's Golden Shower" },
+        new() { TeamName = "Replacement Team" }
+    };
+
+        #endregion
     }
 }

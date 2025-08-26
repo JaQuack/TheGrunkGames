@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using TheGrunkGames.Objects;
+using TheGrunkGames.Entities;
+using TheGrunkGames.Models.TournamentModels;
 
 namespace TheGrunkGames.Services
 {
@@ -28,10 +29,7 @@ namespace TheGrunkGames.Services
                 return;
             try
             {
-                if (tournament == null)
-                {
-                    throw new ArgumentNullException("Unable to Save tournament, no tournament provided");
-                }
+                ArgumentNullException.ThrowIfNull(tournament);
 
                 var history = new History
                 {

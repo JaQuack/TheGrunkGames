@@ -1,0 +1,109 @@
+﻿@page "/"
+@inject HttpClient Http
+
+<h3>Gustavs Speltävling 2025 - TeamStandings</h3>
+
+<div>
+    <h4>Current Round</h4>
+    <div>
+        @if (CurrentRound == null)
+        {
+            <span>Ingen aktiv runda spelas</span>
+        }
+        else
+        {
+            @foreach (var match in CurrentRound.Matches)
+            {
+                <div>
+                    <b>@match.Team_1_Name</b>
+                    @if (!string.IsNullOrEmpty(match.Team_2_Name))
+                    {
+                        <span> VS <b>@match.Team_2_Name</b></span>
+                    }
+                    <span> Playing: @((match.Game?.Name == "TIMETRIAL") ? $"{match.Game.Name} (Overcooked)" : match.Game?.Name)</span>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<br />
+
+<div>
+    <h4>Team Standings</h4>
+    <div>
+        @if (TeamStandings == null)
+        {
+            <span>Loading...</span>
+        }
+        else
+        {
+            @foreach (var team in TeamStandings)
+            {
+                <div>@team.TeamName, @team.TeamScore</div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private Round? CurrentRound;
+    private List<TeamStanding>? TeamStandings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        // Poll every second, similar to setInterval in JS
+        _ = PeriodicRefresh();
+    }
+
+    private async Task LoadData()
+    {
+        CurrentRound = await GetCurrentRound();
+        TeamStandings = await GetTeamStandings();
+        StateHasChanged();
+    }
+
+    private async Task PeriodicRefresh()
+    {
+        while (true)
+        {
+            await LoadData();
+            await Task.Delay(1000);
+        }
+    }
+
+    private async Task<Round?> GetCurrentRound()
+    {
+        try
+        {
+            var response = await Http.GetAsync("/Game/GetCurrentRound");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrWhiteSpace(json) || json == "null")
+                    return null;
+                return System.Text.Json.JsonSerializer.Deserialize<Round>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    private async Task<List<TeamStanding>?> GetTeamStandings()
+    {
+        try
+        {
+            var response = await Http.GetAsync("/Game/GetTeamStandings");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                return System.Text.Json.JsonSerializer.Deserialize<List<TeamStanding>>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+        }
+        catch { }
+        return null;
+    }
+
+
+}

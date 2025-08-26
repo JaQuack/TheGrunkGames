@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.3.1" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>49c11619-0b9b-418e-8a7a-2440ebec68a2</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.3.1" />
+    <PackageReference Include="Aspire4Wasm.AppHost" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TheGrunkGames.BlazorApp\TheGrunkGames.BlazorApp.csproj" />
+    <ProjectReference Include="..\TheGrunkGames.Tests\TheGrunkGames.Tests.csproj" />
+    <ProjectReference Include="..\TheGrunkGames\TheGrunkGames.csproj" />
+  </ItemGroup>
+
+</Project>

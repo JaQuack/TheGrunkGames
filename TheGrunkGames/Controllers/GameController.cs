@@ -1,13 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Server.IIS.Core;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using TheGrunkGames.Models.TournamentModels;
 using TheGrunkGames.Services;
-using TheGrunkGames.Objects;
 
 namespace TheGrunkGames.Controllers
 {
