@@ -24,7 +24,7 @@ namespace TheGrunkGames.Tests
             };
             var games = new List<Game>
             {
-                new Game { Name = "GameA", Device = Device.PC_Couch },
+                new Game { Name = "GameA", Device = Device.LAP_Steam },
                 new Game { Name = "GameB", Device = Device.TV },
                 new Game { Name = "TimeTrial", Device = Device.TIMETRIAL }
             };
@@ -74,7 +74,7 @@ namespace TheGrunkGames.Tests
             };
             var games = new List<Game>
             {
-                new Game { Name = "GameA", Device = Device.PC_Couch },
+                new Game { Name = "GameA", Device = Device.LAP_Steam },
                 new Game { Name = "GameB", Device = Device.TV },
                 new Game { Name = "TimeTrial", Device = Device.TIMETRIAL }
             };
