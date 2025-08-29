@@ -16,10 +16,10 @@ namespace TheGrunkGames.Services
         {
             _tournament = new Tournament
             {
-                Teams = GetDefaultTeams(),
                 Games = GetDefaultGames(),
                 Rounds = []
             };
+            _tournament.SetTeams(GetDefaultTeams());
             _storageService = storageService;
         }
 
@@ -33,7 +33,7 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Sets the tournament and persists it.
         /// </summary>
-        internal async Task SetTournament(Tournament newTournament)
+        public async Task SetTournament(Tournament newTournament)
         {
             _tournament = newTournament;
             await _storageService.SaveTournament(_tournament);
@@ -46,9 +46,11 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Adds a team to the tournament.
         /// </summary>
-        internal async Task AddTeam(Team team)
+        public async Task AddTeam(Team team)
         {
-            _tournament.Teams.Add(team);
+            var teams = _tournament.GetTeams();
+            teams.Add(team);
+            _tournament.SetTeams(teams);
             await _storageService.SaveTournament(_tournament);
         }
 
@@ -57,18 +59,18 @@ namespace TheGrunkGames.Services
         /// </summary>
         public async Task SetTeams(List<Team> teams)
         {
-            _tournament.Teams = teams;
+            _tournament.SetTeams(teams);
             await _storageService.SaveTournament(_tournament);
         }
 
         /// <summary>
         /// Checks if a team exists by name.
         /// </summary>
-        internal bool TeamExists(string teamName) =>
-            _tournament.Teams.Any(x => x.TeamName.Equals(teamName, StringComparison.InvariantCultureIgnoreCase));
+        public bool TeamExists(string teamName) =>
+            _tournament.GetTeams().Any(x => x.TeamName.Equals(teamName, StringComparison.InvariantCultureIgnoreCase));
 
         private Team GetTeamByName(string name) =>
-            _tournament.Teams.FirstOrDefault(x => x.TeamName.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+            _tournament.GetTeams().FirstOrDefault(x => x.TeamName.Equals(name, StringComparison.InvariantCultureIgnoreCase));
 
         #endregion
 
@@ -77,7 +79,7 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Adds a game to the tournament.
         /// </summary>
-        internal async Task AddGame(Game game)
+        public async Task AddGame(Game game)
         {
             _tournament.Games.Add(game);
             await _storageService.SaveTournament(_tournament);
@@ -86,7 +88,7 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Sets the list of games for the tournament.
         /// </summary>
-        internal async Task SetGames(List<Game> games)
+        public async Task SetGames(List<Game> games)
         {
             _tournament.Games = games;
             await _storageService.SaveTournament(_tournament);
@@ -105,13 +107,13 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Gets a round by its ID.
         /// </summary>
-        internal Round GetRound(int roundId) =>
+        public Round GetRound(int roundId) =>
             _tournament.Rounds.FirstOrDefault(x => x.RoundId == roundId);
 
         /// <summary>
         /// Sets a round, replacing any existing round with the same ID.
         /// </summary>
-        internal async Task SetRound(Round round)
+        public async Task SetRound(Round round)
         {
             var existingRound = GetRound(round.RoundId);
             _tournament.Rounds.Remove(existingRound);
@@ -122,7 +124,7 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Deletes a round by its ID.
         /// </summary>
-        internal async Task DeleteRound(int roundId)
+        public async Task DeleteRound(int roundId)
         {
             var round = GetRound(roundId);
             _tournament.Rounds.Remove(round);
@@ -132,7 +134,7 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Removes all inactive (staging) rounds.
         /// </summary>
-        internal async Task RemoveInactiveRounds()
+        public async Task RemoveInactiveRounds()
         {
             _tournament.Rounds.RemoveAll(x => x.isStaging);
             await _storageService.SaveTournament(_tournament);
@@ -148,13 +150,13 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Gets a match by its ID.
         /// </summary>
-        internal Match GetMatch(int matchId) =>
+        public Match GetMatch(int matchId) =>
             GetActiveRounds().SelectMany(x => x.Matches).FirstOrDefault(y => y.MatchId == matchId);
 
         /// <summary>
         /// Completes a match and updates team stats.
         /// </summary>
-        internal async Task CompleteMatch(MatchResult result)
+        public async Task CompleteMatch(MatchResult result)
         {
             var match = GetMatch(result.MatchId);
             match.ScoreTeam1 = result.Team1Score;
@@ -175,7 +177,7 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Changes the game for a match.
         /// </summary>
-        internal async Task<bool> ChangeGameForMatch(int matchId, string gameName)
+        public async Task<bool> ChangeGameForMatch(int matchId, string gameName)
         {
             var match = GetMatch(matchId);
             var game = _tournament.Games.FirstOrDefault(x => x.Name.Equals(gameName, StringComparison.InvariantCultureIgnoreCase));
@@ -189,7 +191,7 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Changes the teams for a match.
         /// </summary>
-        internal async Task ChangeTeamsForMatch(int matchId, string team1Name, string team2Name)
+        public async Task ChangeTeamsForMatch(int matchId, string team1Name, string team2Name)
         {
             var match = GetMatch(matchId);
             var team1 = GetTeamByName(team1Name);
@@ -214,8 +216,8 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Gets team standings.
         /// </summary>
-        internal List<TeamStanding> GetTeamStandings() =>
-            _tournament.Teams
+        public List<TeamStanding> GetTeamStandings() =>
+            _tournament.GetTeams()
                 .Select(x => new TeamStanding { TeamName = x.TeamName, TeamScore = x.CurrentScore })
                 .OrderByDescending(x => x.TeamScore)
                 .ToList();
@@ -223,10 +225,10 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Gets team statistics.
         /// </summary>
-        internal List<TeamStats> GetTeamStats()
+        public List<TeamStats> GetTeamStats()
         {
             var teamsStats = new List<TeamStats>();
-            foreach (var team in _tournament.Teams)
+            foreach (var team in _tournament.GetTeams())
             {
                 var teamsPlayedAgainst = team.MatchesPlayed.Select(x => x.GetOpponentsName(team.TeamName)).Distinct();
                 var gamesPlayed = team.MatchesPlayed.Select(x => x.Game.Name).Distinct();
@@ -285,19 +287,22 @@ namespace TheGrunkGames.Services
             var matchups = new List<Match>();
             var matchId = GetNextMatchId();
 
-            if (_tournament.IsTimeTrial())
+            if (_tournament.IsTimeTrial)
             {
-                var minTimeTrial = _tournament.Teams.Min(x => x.TimeTrialsPlayed());
-                var teamsToChooseFrom = _tournament.Teams.Where(x => x.TimeTrialsPlayed() == minTimeTrial).ToList();
-                var teamToPlayTimeTrial = teamsToChooseFrom[_random.Next(teamsToChooseFrom.Count)];
-
-                matchups.Add(new Match
+                for (int i = 0; i < _tournament.NrTeamsToTimeTrial; i++)
                 {
-                    Team_1_Name = teamToPlayTimeTrial.TeamName,
-                    IsTimeTrial = true,
-                    Game = _tournament.Games.FirstOrDefault(x => x.Device == Device.TIMETRIAL),
-                    MatchId = matchId++
-                });
+                    var minTimeTrial = _tournament.GetTeams().Min(x => x.TimeTrialsPlayed());
+                    var teamsToChooseFrom = _tournament.GetTeams().Where(x => x.TimeTrialsPlayed() == minTimeTrial).ToList();
+                    var teamToPlayTimeTrial = teamsToChooseFrom[_random.Next(teamsToChooseFrom.Count)];
+
+                    matchups.Add(new Match
+                    {
+                        Team_1_Name = teamToPlayTimeTrial.TeamName,
+                        IsTimeTrial = true,
+                        Game = _tournament.Games.FirstOrDefault(x => x.Device == Device.TIMETRIAL),
+                        MatchId = matchId++
+                    });
+                }
             }
 
             var allPossibleMatchups = GetAllPossibleMatchups(matchups);
@@ -324,12 +329,12 @@ namespace TheGrunkGames.Services
                     MatchId = matchId++
                 });
 
-                if (_tournament.Teams.All(x => matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
+                if (_tournament.GetTeams().All(x => matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
                     break;
             }
 
             if (matchups.Any(x => x.Game == null && !x.IsTimeTrial) ||
-                _tournament.Teams.Any(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
+                _tournament.GetTeams().Any(x => !matchups.Any(y => y.IsTeamPlaying(x.TeamName))))
             {
                 throw new InvalidOperationException("Failed to assign games to all teams.");
             }
@@ -340,9 +345,9 @@ namespace TheGrunkGames.Services
         private List<KeyValuePair<Team, Team>> GetAllPossibleMatchups(List<Match> existingMatchups)
         {
             var allPossibleMatchups = new List<KeyValuePair<Team, Team>>();
-            foreach (var team in _tournament.Teams.Where(x => !existingMatchups.Any(y => y.IsTeamPlaying(x.TeamName))))
+            foreach (var team in _tournament.GetTeams().Where(x => !existingMatchups.Any(y => y.IsTeamPlaying(x.TeamName))))
             {
-                var newMatchups = _tournament.Teams.Where(x => !x.Equals(team) &&
+                var newMatchups = _tournament.GetTeams().Where(x => !x.Equals(team) &&
                     !(allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(team, x)) ||
                       allPossibleMatchups.Contains(new KeyValuePair<Team, Team>(x, team))));
                 foreach (var matchup in newMatchups)
@@ -369,7 +374,7 @@ namespace TheGrunkGames.Services
         /// <summary>
         /// Loads tournament history and sets it.
         /// </summary>
-        internal async Task GetAndSetHistory(string partitionKey, string rowKey)
+        public async Task GetAndSetHistory(string partitionKey, string rowKey)
         {
             var tournament = await _storageService.GetTournament(partitionKey, rowKey);
             if (tournament != null)
@@ -382,19 +387,19 @@ namespace TheGrunkGames.Services
 
         private static List<Game> GetDefaultGames() => new()
     {
-        new() { Name = "Beerpong", Device = Device.IRL },
+        new() { Name = "Bopl Battle", Device = Device.LAP_Steam },
+        new() { Name = "Make way", Device = Device.LAP_Steam },
+        new() { Name = "Stick Fight", Device = Device.LAP_Steam },
+        new() { Name = "Screencheat", Device = Device.TV_Steam },
+        new() { Name = "Hidden in plainsight", Device = Device.TV_Steam},
+        new() { Name = "Bunny Hill", Device = Device.TV_Steam },
+        new() { Name = "NBA JAM", Device = Device.TV },
+        new() { Name = "Tekken 3", Device = Device.TV },
         new() { Name = "Mario Kart 64", Device = Device.TV },
-        new() { Name = "Mario Strickers (Football)", Device = Device.TV_GameCube },
-        new() { Name = "Cel Damage Overdrive", Device = Device.TV_GameCube },
-        new() { Name = "Super Bomber man", Device = Device.TV },
-        new() { Name = "Trackmania", Device = Device.PC_Steam },
-        new() { Name = "WC3 - Castle Fight", Device = Device.PC_Steam },
-        new() { Name = "Bopl Battle", Device = Device.PC_Couch },
-        new() { Name = "Magequit", Device = Device.PC_Couch },
-        new() { Name = "Pocket Mini Golf", Device = Device.PC_Couch },
-        new() { Name = "Unreal Tournament", Device = Device.PC_Steam_2 },
-        new() { Name = "Mortal Kombat 3", Device = Device.TV },
-        new() { Name = "Liero", Device = Device.PC_Steam_2 },
+        new() { Name = "Kubb", Device = Device.IRL },
+        new() { Name = "Caps", Device = Device.IRL },
+        new() { Name = "WC3 - WmW Reborn 13.4", Device = Device.PC },
+        new() { Name = "Sacrifice", Device = Device.PC },
         new() { Name = "TIMETRIAL", Device = Device.TIMETRIAL }
     };
 

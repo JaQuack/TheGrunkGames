@@ -20,31 +20,29 @@ namespace TheGrunkGames.Controllers
         }
 
         [HttpGet("GetCurrentRound")]
-        public string GetCurrentRound()
+        public Round GetCurrentRound()
         {
-            var round = _gameService.GetCurrentRound();
-            return JsonConvert.SerializeObject(round);
+            return _gameService.GetCurrentRound();
         }
 
         [HttpGet("GetNextRound")]
-        public async Task<string> GetNextRound()
+        public async Task<Round> GetNextRound()
         {
-            var round = await _gameService.GetNextRound();
-            return JsonConvert.SerializeObject(round);
+            return await _gameService.GetNextRound();
         }
 
         [HttpGet("GetNextRound_Staging")]
-        public async Task<string> GetNextRoundStaging()
+        public async Task<Round> GetNextRoundStaging()
         {
             await _gameService.RemoveInactiveRounds();
             //var round = _gameService.GetNextRound();
             var round = await _gameService.GetNextRound();
             round.isStaging = true;
-            return JsonConvert.SerializeObject(round);
+            return round;
         }
 
         [HttpGet("SetStaging")]
-        public async Task<string> SetStaging(bool activate, int roundId)
+        public async Task<Round> SetStaging(bool activate, int roundId)
         {
             if (roundId == 0)
                 throw new Exception("Ivnalid RoundId");
@@ -54,24 +52,27 @@ namespace TheGrunkGames.Controllers
             {
                 round.isStaging = false;
                 await _gameService.RemoveInactiveRounds();
-                return JsonConvert.SerializeObject(round);
+                return round;
             }
             else
             {
                 await _gameService.RemoveInactiveRounds();
             }
-            return JsonConvert.SerializeObject(round);
+            return round;
         }
 
         [HttpGet("GetRound")]
-        public string GetRound(int roundId)
+        public Round GetRound(int roundId)
         {
             var round = _gameService.GetRound(roundId);
 
             if (round == null)
-                return "No Round with that Id";
+            {
+                Response.StatusCode = 404;
+                return round;
+            }
 
-            return JsonConvert.SerializeObject(round);
+            return round;
         }
 
         [HttpPost("SetRound_FullOverride")]
@@ -106,17 +107,17 @@ namespace TheGrunkGames.Controllers
         }
 
         [HttpGet("Tournament")]
-        public string GetTournament()
+        public Tournament GetTournament()
         {
             var tournament = _gameService.GetTournament();
-            return JsonConvert.SerializeObject(tournament);
+            return tournament;
         }
 
         [HttpGet("Teams")]
-        public string GetTeams()
+        public List<Team> GetTeams()
         {
-            var teams = _gameService.GetTournament().Teams;
-            return JsonConvert.SerializeObject(teams);
+            var teams = _gameService.GetTournament().GetTeams();
+            return teams;
         }
 
         [HttpPost("Teams")]
@@ -140,10 +141,10 @@ namespace TheGrunkGames.Controllers
         }
 
         [HttpGet("Games")]
-        public string GetGames()
+        public List<Game> GetGames()
         {
             var games = _gameService.GetTournament().Games;
-            return JsonConvert.SerializeObject(games);
+            return games;
         }
 
         [HttpPost("Games")]
@@ -168,9 +169,9 @@ namespace TheGrunkGames.Controllers
 
 
         [HttpGet("GetTeamStandings")]
-        public string GetTeamStandings()
+        public List<TeamStanding> GetTeamStandings()
         {
-            return JsonConvert.SerializeObject(_gameService.GetTeamStandings());
+            return _gameService.GetTeamStandings();
         }
 
         [HttpPost("AddExtraPoints")]

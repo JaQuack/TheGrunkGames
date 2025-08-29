@@ -3,6 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using System;
+using System.Linq;
 using TheGrunkGames.Services;
 
 namespace TheGrunkGames
@@ -14,6 +16,7 @@ namespace TheGrunkGames
             var builder = WebApplication.CreateBuilder(args);
             builder.AddServiceDefaults();
 
+            builder.Services.AddProblemDetails();
             builder.Services.AddControllers();
             builder.Services.AddSingleton<GameService>();
             builder.Services.AddSingleton<StorageService>();
@@ -24,31 +27,14 @@ namespace TheGrunkGames
 
             builder.Services.AddMvc();
             builder.Services.AddMvcCore();
-            builder.Services.AddCors(options =>
-            {
-                options.AddDefaultPolicy(policy =>
-                {
-                    var clients = builder.Configuration.GetServiceEndpoints("front");  // Get the http and https endpoints for the client known by resource name as "blazor" in the AppHost.
-                                                                                       // var clients = builder.Configuration.GetServiceEndpoints("blazor1", "blazor2"); // This overload does the same thing for multiple clients.
-                                                                                       // var clients = builder.Configuration.GetServiceEndpoint("blazor", "http"); // This overload gets a single named endpoint for a single resource. In this case, the "http" endpoint for the "blazor" resource.
-
-                    policy.WithOrigins(clients); // Add the clients as allowed origins for cross origin resource sharing.
-                    policy.AllowAnyMethod();
-                    policy.WithHeaders("X-Requested-With");
-                });
-            });
-
 
             var app = builder.Build();
 
             app.MapDefaultEndpoints();
 
-            if (builder.Environment.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TheGrunkGames v1"));
-            }
+            app.UseDeveloperExceptionPage();
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TheGrunkGames v1"));
             app.UseHttpsRedirection();
             app.UseRouting();
 
@@ -57,8 +43,29 @@ namespace TheGrunkGames
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
+            string[] summaries = ["Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"];
+
+            app.MapGet("/weatherforecast", () =>
+            {
+                var forecast = Enumerable.Range(1, 5).Select(index =>
+                    new WeatherForecast
+                    (
+                        DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+                        Random.Shared.Next(-20, 55),
+                        summaries[Random.Shared.Next(summaries.Length)]
+                    ))
+                    .ToArray();
+                return forecast;
+            })
+            .WithName("GetWeatherForecast");
+
 
             app.Run();
         }
+        record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+        {
+            public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+        }
+
     }
 }

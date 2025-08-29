@@ -4,11 +4,10 @@
     {
         Undefined = 0,
         TV,
-        TV_GameCube,
-        PC_Steam,
-        PC_Steam_2,
+        TV_Steam,
+        LAP_Steam,
+        PC,
         IRL,
-        PC_Couch,
         TIMETRIAL
     }
 }

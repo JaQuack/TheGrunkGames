@@ -4,18 +4,34 @@
     {
         public Tournament()
         {
-            Teams = [];
+            _teams = [];
             Games = [];
             Rounds = [];
         }
-
-        public List<Team> Teams { get; set; }
+       
+        private List<Team> _teams { get; set; }
         public List<Game> Games { get; set; }
         public List<Round> Rounds { get; set; }
 
-        public bool IsTimeTrial()
+        public List<Team> GetTeams()
         {
-            return Teams.Count % 2 != 0;
+            foreach (var team in _teams)
+            {
+                team.MatchesPlayed = [.. Rounds.SelectMany(x => x.Matches).Where(x => x.IsTeamPlaying(team.TeamName))];
+            }
+            return _teams;
         }
+
+        public void SetTeams(List<Team> teams)
+        {
+            foreach (var team in teams)
+            {
+                team.MatchesPlayed = [.. Rounds.SelectMany(x => x.Matches).Where(x => x.IsTeamPlaying(team.TeamName))];
+            }
+            _teams = teams;
+        }
+
+        public bool IsTimeTrial { get; set; }
+        public int NrTeamsToTimeTrial { get; set; }
     }
 }

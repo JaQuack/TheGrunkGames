@@ -1,0 +1,75 @@
+@page "/currentRound"
+@inject GameServiceClient gameServiceClient
+
+<h3>Gustavs Speltävling 2025 - TeamStandings</h3>
+
+<div>
+    <h4>Current Round</h4>
+    <div>
+        @if (CurrentRound == null)
+        {
+            <span>Ingen aktiv runda spelas, eller så har Jacob gjort något fel och allt är kaos, ge honom öl som straff.</span>
+        }
+        else
+        {
+            @foreach (var match in CurrentRound.Matches)
+            {
+                <div>
+                    <b>@match.Team_1_Name</b>
+                    @if (!string.IsNullOrEmpty(match.Team_2_Name))
+                    {
+                        <span> VS <b>@match.Team_2_Name</b></span>
+                    }
+                    <span> Playing: @((match.Game?.Name == "TIMETRIAL") ? $"{match.Game.Name} (Overcooked)" : match.Game?.Name)</span>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<br />
+
+<div>
+    <h4>Team Standings</h4>
+    <div>
+        @if (TeamStandings == null)
+        {
+            <span>Loading...</span>
+        }
+        else
+        {
+            @foreach (var team in TeamStandings)
+            {
+                <div>@team.TeamName, @team.TeamScore</div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private Round? CurrentRound;
+    private List<TeamStanding>? TeamStandings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        // Poll every second, similar to setInterval in JS
+        _ = PeriodicRefresh();
+    }
+
+    private async Task LoadData()
+    {
+        CurrentRound = await gameServiceClient.GetCurrentRound();
+        TeamStandings = await gameServiceClient.GetTeamStandings();
+        StateHasChanged();
+    }
+
+    private async Task PeriodicRefresh()
+    {
+        while (true)
+        {
+            await LoadData();
+            await Task.Delay(1000);
+        }
+    }
+}

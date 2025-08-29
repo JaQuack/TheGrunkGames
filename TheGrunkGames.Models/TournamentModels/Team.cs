@@ -2,6 +2,12 @@
 {
     public class Team
     {
+        public Team() 
+        {
+            Players = [];
+            MatchesPlayed = [];
+        }
+
         public string TeamName { get; set; }
         public List<Player> Players { get; set; }
         public List<Match> MatchesPlayed { get; set; }

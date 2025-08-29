@@ -1,4 +1,6 @@
 using TheGrunkGames.BlazorApp.Components;
+using Microsoft.Extensions.ServiceDiscovery.Http;
+using Microsoft.Extensions.Http;
 
 namespace TheGrunkGames.BlazorApp;
 
@@ -8,6 +10,15 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         builder.AddServiceDefaults();
+
+        builder.Services.AddServiceDiscovery();
+
+        builder.Services.ConfigureHttpClientDefaults(http =>
+        {
+            http.AddStandardResilienceHandler();
+        });
+
+        builder.Services.AddHttpClient<GameServiceClient>(_ => _.BaseAddress = new Uri("https+http://gameservice"));
 
         // Add services to the container.
         builder.Services.AddRazorComponents()
