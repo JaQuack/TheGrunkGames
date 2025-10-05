@@ -1,4 +1,6 @@
-﻿namespace TheGrunkGames.Models.TournamentModels
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace TheGrunkGames.Models.TournamentModels
 {
     public class Team
     {
@@ -8,7 +10,8 @@
             MatchesPlayed = [];
         }
 
-        public string TeamName { get; set; }
+        [Required, StringLength(50)]
+        public string TeamName { get; set; } = string.Empty;
         public List<Player> Players { get; set; }
         public List<Match> MatchesPlayed { get; set; }
 
@@ -38,7 +41,7 @@
             if (MatchesPlayed == null)
                 return false;
 
-            return MatchesPlayed.Where(x => x.Game.Name.Equals(gameName)).Any(x => x.Team_1_Name.Equals(teamName) || x.Team_2_Name.Equals(teamName));
+            return MatchesPlayed.Where(x => x.Game.Name.Equals(gameName)).Any(x => x.Team_1_Name.Equals(teamName) || (x.Team_2_Name?.Equals(teamName) ?? false));
         }
 
         public void AddMatch(Match match)
@@ -68,20 +71,8 @@
             if (MatchesPlayed == null)
                 return 0;
 
-            return MatchesPlayed.Count(x => x.Team_1_Name.Equals(teamName) || (x.Team_2_Name ?? string.Empty).Equals(teamName));
+            return MatchesPlayed.Count(x => x.Team_1_Name.Equals(teamName, StringComparison.OrdinalIgnoreCase) || (x.Team_2_Name ?? string.Empty).Equals(teamName, StringComparison.OrdinalIgnoreCase));
         }
 
-    }
-    public class TeamStanding
-    {
-        public string TeamName { get; set; }
-        public int TeamScore { get; set; }
-    }
-
-    public class TeamStats
-    {
-        public string TeamName { get; set; }
-        public List<KeyValuePair<string, int>> PlayedAgainstTeam { get; set; }
-        public List<KeyValuePair<string, int>> PlayedGames { get; set; }
     }
 }

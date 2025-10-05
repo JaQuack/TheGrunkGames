@@ -1,0 +1,155 @@
+@page "/admin/rounds"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Admin")]
+@inject GameServiceClient GameService
+
+<h3>Round Management</h3>
+
+<StatusMessage Message="@_statusMessage" IsError="@_isError" OnDismissed="() => _statusMessage = null" />
+
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    <button class="btn btn-primary btn-sm" @onclick="GenerateNextRound">Generate Next Round</button>
+    <button class="btn btn-outline-primary btn-sm" @onclick="GenerateNextRoundStaging">Generate Next Round (Staging)</button>
+</div>
+
+@if (_loading)
+{
+    <p>Loading...</p>
+}
+else if (_rounds is not null)
+{
+    @foreach (var round in _rounds.OrderByDescending(r => r.RoundId))
+    {
+        <div class="mb-2">
+            @if (round.isStaging)
+            {
+                <div class="d-flex gap-2 mb-1">
+                    <button class="btn btn-success btn-sm" @onclick="() => ActivateStaging(round.RoundId)">Activate</button>
+                    <button class="btn btn-outline-danger btn-sm" @onclick="() => DiscardStaging(round.RoundId)">Discard</button>
+                </div>
+            }
+            <TheGrunkGames.BlazorApp.Components.Admin.Shared.RoundView Round="round" Teams="_teams" Games="_games" GameService="GameService" OnRoundChanged="Reload" />
+        </div>
+    }
+}
+
+@code {
+    private List<Round>? _rounds;
+    private List<Team> _teams = [];
+    private List<Game> _games = [];
+    private bool _loading = true;
+    private string? _statusMessage;
+    private bool _isError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Reload();
+    }
+
+    private async Task Reload()
+    {
+        _loading = true;
+        try
+        {
+            var result = await GameService.GetTournament();
+            if (result.Success && result.Data is not null)
+            {
+                _rounds = result.Data.Rounds ?? [];
+                _teams = result.Data.Teams ?? [];
+                _games = result.Data.Games ?? [];
+            }
+            else
+            {
+                _statusMessage = result.Error ?? "Failed to load tournament.";
+                _isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to load: {ex.Message}";
+            _isError = true;
+        }
+        _loading = false;
+        StateHasChanged();
+    }
+
+    private async Task GenerateNextRound()
+    {
+        try
+        {
+            var result = await GameService.GetNextRound();
+            if (result.Success)
+            {
+                _statusMessage = $"Round {result.Data?.RoundId} generated.";
+                _isError = false;
+            }
+            else
+            {
+                _statusMessage = result.Error ?? "Failed to generate round.";
+                _isError = true;
+            }
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to generate round: {ex.Message}";
+            _isError = true;
+        }
+    }
+
+    private async Task GenerateNextRoundStaging()
+    {
+        try
+        {
+            var result = await GameService.GetNextRoundStaging();
+            if (result.Success)
+            {
+                _statusMessage = $"Staging round {result.Data?.RoundId} generated.";
+                _isError = false;
+            }
+            else
+            {
+                _statusMessage = result.Error ?? "Failed to generate staging round.";
+                _isError = true;
+            }
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to generate staging round: {ex.Message}";
+            _isError = true;
+        }
+    }
+
+    private async Task ActivateStaging(int roundId)
+    {
+        try
+        {
+            var result = await GameService.SetStaging(true, roundId);
+            _statusMessage = result.Success ? $"Round {roundId} activated." : (result.Error ?? "Failed to activate.");
+            _isError = !result.Success;
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to activate: {ex.Message}";
+            _isError = true;
+        }
+    }
+
+    private async Task DiscardStaging(int roundId)
+    {
+        try
+        {
+            var result = await GameService.SetStaging(false, roundId);
+            _statusMessage = result.Success ? $"Staging round {roundId} discarded." : (result.Error ?? "Failed to discard.");
+            _isError = !result.Success;
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to discard: {ex.Message}";
+            _isError = true;
+        }
+    }
+}

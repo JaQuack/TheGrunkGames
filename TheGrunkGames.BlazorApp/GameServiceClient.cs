@@ -10,128 +10,128 @@ namespace TheGrunkGames.BlazorApp
             _httpClient = httpClient;
         }
 
-        public async Task<Round> GetCurrentRound()
+        private async Task<ApiResult> ExecuteAsync(Func<Task<HttpResponseMessage>> request)
         {
-            var response = await _httpClient.GetAsync("/Game/GetCurrentRound");
-            if (response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.NoContent)
+            try
             {
-                var round = await response.Content.ReadFromJsonAsync<Round>();
-                if (round is null) throw new Exception("No round data");
-                return round;
+                var response = await request();
+                return response.IsSuccessStatusCode
+                    ? ApiResult.Ok()
+                    : ApiResult.Fail(await response.Content.ReadAsStringAsync());
             }
-            else if (response.StatusCode != System.Net.HttpStatusCode.NoContent)
+            catch (Exception ex) { return ApiResult.Fail(ex.Message); }
+        }
+
+        private async Task<ApiResult<T>> ExecuteAsync<T>(Func<Task<HttpResponseMessage>> request)
+        {
+            try
             {
-                return null;
+                var response = await request();
+                if (!response.IsSuccessStatusCode)
+                    return ApiResult<T>.Fail(await response.Content.ReadAsStringAsync());
+                var data = await response.Content.ReadFromJsonAsync<T>();
+                return ApiResult<T>.Ok(data!);
             }
-            else
+            catch (Exception ex) { return ApiResult<T>.Fail(ex.Message); }
+        }
+
+        private async Task<ApiResult<T>> GetJsonAsync<T>(string url)
+        {
+            try
             {
-                throw new Exception($"Error fetching current round: {response.ReasonPhrase}");
+                var data = await _httpClient.GetFromJsonAsync<T>(url);
+                return ApiResult<T>.Ok(data!);
             }
+            catch (Exception ex) { return ApiResult<T>.Fail(ex.Message); }
         }
 
-        public async Task<Round> GetNextRound()
+        public async Task<ApiResult<Round>> GetCurrentRound()
         {
-            return await _httpClient.GetFromJsonAsync<Round>("/Game/GetNextRound");
+            try
+            {
+                var response = await _httpClient.GetAsync("/Game/GetCurrentRound");
+                if (response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.NoContent)
+                {
+                    var round = await response.Content.ReadFromJsonAsync<Round>();
+                    return round is not null
+                        ? ApiResult<Round>.Ok(round)
+                        : ApiResult<Round>.Fail("No round data returned");
+                }
+                return ApiResult<Round>.Ok(null!);
+            }
+            catch (Exception ex) { return ApiResult<Round>.Fail(ex.Message); }
         }
 
-        public async Task<Round> GetNextRoundStaging()
-        {
-            return await _httpClient.GetFromJsonAsync<Round>("/Game/GetNextRound_Staging");
-        }
+        public async Task<ApiResult<Round>> GetNextRound() =>
+            await ExecuteAsync<Round>(() => _httpClient.PostAsync("/Game/GetNextRound", null));
 
-        public async Task<Round> SetStaging(bool activate, int roundId)
-        {
-            var url = $"/Game/SetStaging?activate={activate}&roundId={roundId}";
-            return await _httpClient.GetFromJsonAsync<Round>(url);
-        }
+        public async Task<ApiResult<Round>> GetNextRoundStaging() =>
+            await ExecuteAsync<Round>(() => _httpClient.PostAsync("/Game/GetNextRound_Staging", null));
 
-        public async Task<Round?> GetRound(int roundId)
-        {
-            var url = $"/Game/GetRound?roundId={roundId}";
-            return await _httpClient.GetFromJsonAsync<Round>(url);
-        }
+        public async Task<ApiResult<Round>> SetStaging(bool activate, int roundId) =>
+            await ExecuteAsync<Round>(() => _httpClient.PostAsync($"/Game/SetStaging?activate={activate}&roundId={roundId}", null));
 
-        public async Task<bool> SetRound(Round round)
-        {
-            var response = await _httpClient.PostAsJsonAsync("/Game/SetRound_FullOverride", round);
-            return response.IsSuccessStatusCode;
-        }
+        public async Task<ApiResult<Round>> GetRound(int roundId) =>
+            await GetJsonAsync<Round>($"/Game/GetRound?roundId={roundId}");
 
-        public async Task<bool> CompleteMatch(MatchResult result)
-        {
-            var response = await _httpClient.PostAsJsonAsync("/Game/CompleteMatch", result);
-            return response.IsSuccessStatusCode;
-        }
+        public async Task<ApiResult> SetRound(Round round) =>
+            await ExecuteAsync(() => _httpClient.PostAsJsonAsync("/Game/SetRound_FullOverride", round));
 
-        public async Task<bool> SetTournament(Tournament tournament)
-        {
-            var response = await _httpClient.PostAsJsonAsync("/Game/Tournament", tournament);
-            return response.IsSuccessStatusCode;
-        }
+        public async Task<ApiResult> CompleteMatch(MatchResult result) =>
+            await ExecuteAsync(() => _httpClient.PostAsJsonAsync("/Game/CompleteMatch", result));
 
-        public async Task<Tournament?> GetTournament()
-        {
-            return await _httpClient.GetFromJsonAsync<Tournament>("/Game/Tournament");
-        }
+        public async Task<ApiResult> SetTournament(Tournament tournament) =>
+            await ExecuteAsync(() => _httpClient.PostAsJsonAsync("/Game/Tournament", tournament));
 
-        public async Task<List<Team>?> GetTeams()
-        {
-            return await _httpClient.GetFromJsonAsync<List<Team>>("/Game/Teams");
-        }
+        public async Task<ApiResult<Tournament>> GetTournament() =>
+            await GetJsonAsync<Tournament>("/Game/Tournament");
 
-        public async Task<bool> SetTeams(List<Team> teams)
-        {
-            var response = await _httpClient.PostAsJsonAsync("/Game/Teams", teams);
-            return response.IsSuccessStatusCode;
-        }
+        public async Task<ApiResult> ResetTournament() =>
+            await ExecuteAsync(() => _httpClient.PostAsync("/Game/Tournament/Reset", null));
 
-        public async Task<bool> AddTeam(Team team)
-        {
-            var response = await _httpClient.PostAsJsonAsync("/Game/Team", team);
-            return response.IsSuccessStatusCode;
-        }
+        public async Task<ApiResult<List<Team>>> GetTeams() =>
+            await GetJsonAsync<List<Team>>("/Game/Teams");
 
-        public async Task<List<Game>?> GetGames()
-        {
-            return await _httpClient.GetFromJsonAsync<List<Game>>("/Game/Games");
-        }
+        public async Task<ApiResult> SetTeams(List<Team> teams) =>
+            await ExecuteAsync(() => _httpClient.PostAsJsonAsync("/Game/Teams", teams));
 
-        public async Task<bool> SetGames(List<Game> games)
-        {
-            var response = await _httpClient.PostAsJsonAsync("/Game/Games", games);
-            return response.IsSuccessStatusCode;
-        }
+        public async Task<ApiResult> AddTeam(Team team) =>
+            await ExecuteAsync(() => _httpClient.PostAsJsonAsync("/Game/Team", team));
 
-        public async Task<bool> AddGame(Game game)
-        {
-            var response = await _httpClient.PostAsJsonAsync("/Game/Game", game);
-            return response.IsSuccessStatusCode;
-        }
+        public async Task<ApiResult<List<Game>>> GetGames() =>
+            await GetJsonAsync<List<Game>>("/Game/Games");
 
-        public async Task<List<TeamStanding>?> GetTeamStandings()
-        {
-            return await _httpClient.GetFromJsonAsync<List<TeamStanding>>("/Game/GetTeamStandings");
-        }
+        public async Task<ApiResult> SetGames(List<Game> games) =>
+            await ExecuteAsync(() => _httpClient.PostAsJsonAsync("/Game/Games", games));
 
-        public async Task<bool> AddExtraPoints(string teamName, int points)
-        {
-            var content = new Dictionary<string, object> { { "teamName", teamName }, { "points", points } };
-            var response = await _httpClient.PostAsJsonAsync("/Game/AddExtraPoints", content);
-            return response.IsSuccessStatusCode;
-        }
+        public async Task<ApiResult> AddGame(Game game) =>
+            await ExecuteAsync(() => _httpClient.PostAsJsonAsync("/Game/Game", game));
 
-        public async Task<bool> ChangeGameForMatch(int matchId, string gameName)
-        {
-            var content = new Dictionary<string, object> { { "matchId", matchId }, { "gameName", gameName } };
-            var response = await _httpClient.PostAsJsonAsync("/Game/ChangeGameForMatch", content);
-            return response.IsSuccessStatusCode;
-        }
+        public async Task<ApiResult<List<TeamStanding>>> GetTeamStandings() =>
+            await GetJsonAsync<List<TeamStanding>>("/Game/GetTeamStandings");
 
-        public async Task<bool> ChangeTeamsForMatch(int matchId, string team1Name, string team2Name)
-        {
-            var content = new Dictionary<string, object> { { "matchId", matchId }, { "team1Name", team1Name }, { "team2Name", team2Name } };
-            var response = await _httpClient.PostAsJsonAsync("/Game/ChangeTeamsForMatch", content);
-            return response.IsSuccessStatusCode;
-        }
+        public async Task<ApiResult<List<TeamStats>>> GetTeamStats() =>
+            await GetJsonAsync<List<TeamStats>>("/Game/TeamStats");
+
+        public async Task<ApiResult> AddExtraPoints(string teamName, int points) =>
+            await ExecuteAsync(() => _httpClient.PostAsync($"/Game/AddExtraPoints?teamName={Uri.EscapeDataString(teamName)}&points={points}", null));
+
+        public async Task<ApiResult> ChangeGameForMatch(int matchId, string gameName) =>
+            await ExecuteAsync(() => _httpClient.PostAsync($"/Game/ChangeGameForMatch?matchId={matchId}&gameName={Uri.EscapeDataString(gameName)}", null));
+
+        public async Task<ApiResult> ChangeTeamsForMatch(int matchId, string team1Name, string team2Name) =>
+            await ExecuteAsync(() => _httpClient.PostAsync($"/Game/ChangeTeamsForMatch?matchId={matchId}&team1Name={Uri.EscapeDataString(team1Name)}&team2Name={Uri.EscapeDataString(team2Name)}", null));
+
+        public async Task<ApiResult> RemoveTeam(string teamName) =>
+            await ExecuteAsync(() => _httpClient.DeleteAsync($"/Game/Team?teamName={Uri.EscapeDataString(teamName)}"));
+
+        public async Task<ApiResult> RemoveGame(string gameName) =>
+            await ExecuteAsync(() => _httpClient.DeleteAsync($"/Game/Game?gameName={Uri.EscapeDataString(gameName)}"));
+
+        public async Task<ApiResult<List<TournamentHistorySummary>>> GetTournamentHistory() =>
+            await GetJsonAsync<List<TournamentHistorySummary>>("/Game/Tournament/History");
+
+        public async Task<ApiResult> RestoreTournament(string version, string year) =>
+            await ExecuteAsync(() => _httpClient.PostAsync($"/Game/Tournament/Restore?version={Uri.EscapeDataString(version)}&year={Uri.EscapeDataString(year ?? "")}", null));
     }
 }

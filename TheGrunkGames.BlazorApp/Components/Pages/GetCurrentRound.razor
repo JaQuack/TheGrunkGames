@@ -1,47 +1,82 @@
 @page "/currentRound"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
 @inject GameServiceClient gameServiceClient
+@inject TournamentHubConnection hubConnection
 
-<h3>Gustavs Speltävling 2025 - TeamStandings</h3>
+<div class="scoreboard">
+    <div class="scoreboard-header">
+        <h1>?? Gustavs Speltävling 2025</h1>
+    </div>
 
-<div>
-    <h4>Current Round</h4>
-    <div>
+    <div class="scoreboard-section">
+        <h2>Current Round</h2>
         @if (CurrentRound == null)
         {
-            <span>Ingen aktiv runda spelas, eller så har Jacob gjort något fel och allt är kaos, ge honom öl som straff.</span>
+            <p class="no-round-message">Ingen aktiv runda spelas, eller så har Jacob gjort något fel och allt är kaos, ge honom öl som straff.</p>
         }
         else
         {
-            @foreach (var match in CurrentRound.Matches)
-            {
-                <div>
-                    <b>@match.Team_1_Name</b>
-                    @if (!string.IsNullOrEmpty(match.Team_2_Name))
-                    {
-                        <span> VS <b>@match.Team_2_Name</b></span>
-                    }
-                    <span> Playing: @((match.Game?.Name == "TIMETRIAL") ? $"{match.Game.Name} (Overcooked)" : match.Game?.Name)</span>
-                </div>
-            }
+            <div class="match-grid">
+                @foreach (var match in CurrentRound.Matches)
+                {
+                    <div class="match-card @(match.HasCompleted ? "match-completed" : "")">
+                        <div class="match-teams">
+                            <span class="team-name team-left">@match.Team_1_Name</span>
+                            @if (!string.IsNullOrEmpty(match.Team_2_Name))
+                            {
+                                <span class="vs-badge">VS</span>
+                                <span class="team-name team-right">@match.Team_2_Name</span>
+                            }
+                        </div>
+                        <div class="match-game">
+                            @if (match.IsTimeTrial)
+                            {
+                                <span>?? @match.Game?.Name</span>
+                            }
+                            else
+                            {
+                                <span>??? @match.Game?.Name</span>
+                            }
+                        </div>
+                        @if (match.HasCompleted)
+                        {
+                            <div class="match-score">@match.ScoreTeam1 – @match.ScoreTeam2</div>
+                        }
+                    </div>
+                }
+            </div>
         }
     </div>
-</div>
 
-<br />
-
-<div>
-    <h4>Team Standings</h4>
-    <div>
-        @if (TeamStandings == null)
+    <div class="scoreboard-section">
+        <h2>Standings</h2>
+        @if (TeamStandings is not null)
         {
-            <span>Loading...</span>
-        }
-        else
-        {
-            @foreach (var team in TeamStandings)
-            {
-                <div>@team.TeamName, @team.TeamScore</div>
-            }
+            <table class="standings-table">
+                <thead>
+                    <tr>
+                        <th class="rank-col">#</th>
+                        <th>Team</th>
+                        <th class="score-col">Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < TeamStandings.Count; i++)
+                    {
+                        <tr class="@(i == 0 ? "first-place" : i == 1 ? "second-place" : i == 2 ? "third-place" : "")">
+                            <td class="rank-col">
+                                @if (i == 0) { <span>??</span> }
+                                else if (i == 1) { <span>??</span> }
+                                else if (i == 2) { <span>??</span> }
+                                else { <span>@(i + 1)</span> }
+                            </td>
+                            <td>@TeamStandings[i].TeamName</td>
+                            <td class="score-col">@TeamStandings[i].TeamScore</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         }
     </div>
 </div>
@@ -52,24 +87,31 @@
 
     protected override async Task OnInitializedAsync()
     {
+        hubConnection.OnTournamentUpdated += OnTournamentUpdated;
+        await hubConnection.StartAsync();
         await LoadData();
-        // Poll every second, similar to setInterval in JS
-        _ = PeriodicRefresh();
+    }
+
+    private void OnTournamentUpdated()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await LoadData();
+            StateHasChanged();
+        });
     }
 
     private async Task LoadData()
     {
-        CurrentRound = await gameServiceClient.GetCurrentRound();
-        TeamStandings = await gameServiceClient.GetTeamStandings();
-        StateHasChanged();
+        var roundResult = await gameServiceClient.GetCurrentRound();
+        CurrentRound = roundResult.Success ? roundResult.Data : null;
+
+        var standingsResult = await gameServiceClient.GetTeamStandings();
+        TeamStandings = standingsResult.Success ? standingsResult.Data : null;
     }
 
-    private async Task PeriodicRefresh()
+    public async ValueTask DisposeAsync()
     {
-        while (true)
-        {
-            await LoadData();
-            await Task.Delay(1000);
-        }
+        hubConnection.OnTournamentUpdated -= OnTournamentUpdated;
     }
 }

@@ -3,7 +3,7 @@
     public class Round
     {
         public int RoundId { get; set; }
-        public List<Match> Matches { get; set; }
+        public List<Match> Matches { get; set; } = [];
 
         public bool isStaging { get; set; }
 

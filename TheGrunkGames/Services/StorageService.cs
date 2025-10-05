@@ -1,8 +1,7 @@
-﻿using Azure;
-using Azure.Data.Tables;
+﻿using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using TheGrunkGames.Entities;
@@ -10,91 +9,103 @@ using TheGrunkGames.Models.TournamentModels;
 
 namespace TheGrunkGames.Services
 {
-    public class StorageService
+    public class StorageService : IStorageService
     {
-        private readonly TableClient _tableClient;
+        private Tournament? _cachedTournament;
+        private readonly IMongoCollection<TournamentDocument>? _collection;
+
+        static StorageService()
+        {
+            ConventionRegistry.Register("IgnoreExtraElements",
+                new ConventionPack { new IgnoreExtraElementsConvention(true) },
+                _ => true);
+        }
+
         public StorageService()
         {
-            var connectionString = ""; //Add a connection string to use storage feature
-            if (!string.IsNullOrEmpty(connectionString))
-            {
-                _tableClient = new TableClient(connectionString, "tournamentHistory");
-                _tableClient.CreateIfNotExists();
-            }
+            _collection = null;
+        }
+
+        public StorageService(IMongoClient mongoClient)
+        {
+            var database = mongoClient.GetDatabase("thegrunkgames");
+            _collection = database.GetCollection<TournamentDocument>("tournaments");
         }
 
         public async Task SaveTournament(Tournament tournament)
         {
-            if (_tableClient == null)
+            ArgumentNullException.ThrowIfNull(tournament);
+            _cachedTournament = tournament;
+
+            if (_collection == null)
                 return;
-            try
-            {
-                ArgumentNullException.ThrowIfNull(tournament);
 
-                var history = new History
-                {
-                    RowKey = DateTime.Now.Year.ToString() + "_" + (tournament.Rounds.Any() ? tournament.Rounds.Max(x => x.RoundId).ToString() : "0"),
-                    PartitionKey = DateTime.Now.Year.ToString()
-                };
-                history.SetTournament(tournament);
+            var roundVersion = tournament.Rounds.Count > 0
+                ? tournament.Rounds.Max(x => x.RoundId)
+                : 0;
+            var year = DateTime.Now.Year.ToString();
 
-                if (_tableClient.GetEntityIfExists<History>(history.PartitionKey, history.RowKey).HasValue)
-                {
-                    await _tableClient.UpdateEntityAsync(history, ETag.All);
-                }
-                else
-                {
-                    await _tableClient.AddEntityAsync(history);
-                }
-            }
-            catch (Exception e)
+            var doc = new TournamentDocument
             {
-                throw;
-            }
+                Id = $"{year}_{roundVersion}",
+                Year = year,
+                RoundVersion = roundVersion,
+                TournamentData = tournament,
+                SavedAt = DateTime.UtcNow
+            };
+
+            var filter = Builders<TournamentDocument>.Filter.Eq(x => x.Id, doc.Id);
+            await _collection.ReplaceOneAsync(filter, doc, new ReplaceOptions { IsUpsert = true });
         }
 
-        public async Task<Tournament> GetTournament(string version, string year = null)
+        public async Task<Tournament> GetTournament(string? version = null, string? year = null)
         {
-            if (_tableClient == null)
-                return null;
-            try
+            if (_collection == null)
+                return _cachedTournament ?? new Tournament();
+
+            if (string.IsNullOrEmpty(version) && string.IsNullOrWhiteSpace(year) && _cachedTournament != null)
+                return _cachedTournament;
+
+            if (string.IsNullOrWhiteSpace(year))
+                year = DateTime.Now.Year.ToString();
+
+            TournamentDocument doc;
+            if (string.IsNullOrEmpty(version))
             {
-                if (string.IsNullOrWhiteSpace(year))
-                    year = DateTime.Now.Year.ToString();
-
-                Tournament tournament = null;
-                var historyOrNull = await _tableClient.GetEntityIfExistsAsync<History>(year, version);
-
-                if (historyOrNull == null || !historyOrNull.HasValue)
-                {
-                    tournament = new Tournament();
-                }
-                else
-                    tournament = historyOrNull.Value.Tournament();
-
-                return tournament;
+                doc = await _collection
+                    .Find(Builders<TournamentDocument>.Filter.Eq(x => x.Year, year))
+                    .SortByDescending(x => x.RoundVersion)
+                    .FirstOrDefaultAsync();
             }
-            catch (Exception e)
+            else
             {
-                throw;
+                doc = await _collection
+                    .Find(Builders<TournamentDocument>.Filter.Eq(x => x.Id, version))
+                    .FirstOrDefaultAsync();
             }
+
+            var tournament = doc?.TournamentData ?? new Tournament();
+            _cachedTournament = tournament;
+            return tournament;
         }
 
-        public string GetNewestTournamentVersion(string year = null)
+        public async Task<List<TournamentHistorySummary>> ListTournamentHistory()
         {
-            try
-            {
-                if (string.IsNullOrEmpty(year))
-                    year = DateTime.Now.Year.ToString();
+            if (_collection == null)
+                return [];
 
-                List<History> tournaments = _tableClient.Query<History>($"PartitionKey eq {year}", 50).ToList();
+            var docs = await _collection
+                .Find(Builders<TournamentDocument>.Filter.Empty)
+                .SortByDescending(x => x.SavedAt)
+                .ToListAsync();
 
-                return tournaments.OrderByDescending(x => int.Parse(x.RowKey.Split("_").LastOrDefault())).FirstOrDefault().RowKey;
-            }
-            catch (Exception e)
+            return docs.Select(d => new TournamentHistorySummary
             {
-                throw;
-            }
+                Id = d.Id,
+                Year = d.Year,
+                RoundVersion = d.RoundVersion,
+                SavedAt = d.SavedAt
+            }).ToList();
         }
     }
 }

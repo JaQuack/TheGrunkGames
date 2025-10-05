@@ -5,22 +5,20 @@ using Aspire.Hosting.Publishing;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var customDomain = builder.AddParameter("customDomain");
-var certificateName = builder.AddParameter("certificateName", value: "", publishValueAsDefault: true);
-
-builder.AddAzureContainerAppEnvironment("TheGrunkGames");
+var mongo = builder.AddMongoDB("mongodb")
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithDataVolume("thegrunkgames-mongo-data");
+var mongoDb = mongo.AddDatabase("thegrunkgames");
 
 var api = builder.AddProject<Projects.TheGrunkGames>("gameservice")
-    .WithExternalHttpEndpoints();
+    .WithExternalHttpEndpoints()
+    .WithReference(mongoDb)
+    .WaitFor(mongoDb);
 
 
 var blazorApp = builder.AddProject<Projects.TheGrunkGames_BlazorApp>("blazorapp")
     .WithExternalHttpEndpoints()
-    .WithReference(api)
-    .PublishAsAzureContainerApp((infra, app) =>
-    {
-        app.ConfigureCustomDomain(customDomain, certificateName);
-    });
+    .WithReference(api);
 
 api.WithReference(blazorApp);
 

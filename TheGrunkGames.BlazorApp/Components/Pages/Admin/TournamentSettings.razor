@@ -1,0 +1,119 @@
+@page "/admin/tournament"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Admin")]
+@inject GameServiceClient GameService
+
+<h3>Tournament Settings</h3>
+
+<StatusMessage Message="@_statusMessage" IsError="@_isError" OnDismissed="() => _statusMessage = null" />
+
+@if (_loading)
+{
+    <p>Loading...</p>
+}
+else if (_tournament is not null)
+{
+    <div class="card" style="max-width: 500px;">
+        <div class="card-body">
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="isTimeTrial" @bind="_tournament.IsTimeTrial" />
+                <label class="form-check-label" for="isTimeTrial">Is Time Trial</label>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="nrTeams">Nr Teams To Time Trial</label>
+                <input type="number" class="form-control" id="nrTeams" @bind="_tournament.NrTeamsToTimeTrial" />
+            </div>
+
+            <button class="btn btn-success" @onclick="Save">Save</button>
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="card border-danger" style="max-width: 500px;">
+        <div class="card-body">
+            <h5 class="card-title text-danger">Reset Tournament</h5>
+            <p class="card-text">This will archive the current tournament and start fresh with default teams and games. All rounds, scores, and extra points will be cleared.</p>
+
+            @if (!_confirmReset)
+            {
+                <button class="btn btn-outline-danger" @onclick="() => _confirmReset = true">Reset Tournament</button>
+            }
+            else
+            {
+                <p class="text-danger fw-bold">Are you sure? This cannot be undone.</p>
+                <button class="btn btn-danger me-2" @onclick="ResetTournament">Yes, Reset</button>
+                <button class="btn btn-secondary" @onclick="() => _confirmReset = false">Cancel</button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private Tournament? _tournament;
+    private bool _loading = true;
+    private string? _statusMessage;
+    private bool _isError;
+    private bool _confirmReset;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        try
+        {
+            var result = await GameService.GetTournament();
+            if (result.Success)
+                _tournament = result.Data;
+            else
+            {
+                _statusMessage = result.Error ?? "Failed to load tournament.";
+                _isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to load tournament: {ex.Message}";
+            _isError = true;
+        }
+        _loading = false;
+    }
+
+    private async Task Save()
+    {
+        if (_tournament is null) return;
+
+        var result = await GameService.SetTournament(_tournament);
+        if (result.Success)
+        {
+            _statusMessage = "Tournament settings saved.";
+            _isError = false;
+        }
+        else
+        {
+            _statusMessage = result.Error ?? "Failed to save tournament settings.";
+            _isError = true;
+        }
+    }
+
+    private async Task ResetTournament()
+    {
+        _confirmReset = false;
+
+        var result = await GameService.ResetTournament();
+        if (result.Success)
+        {
+            _statusMessage = "Tournament has been reset.";
+            _isError = false;
+
+            var loadResult = await GameService.GetTournament();
+            if (loadResult.Success)
+                _tournament = loadResult.Data;
+        }
+        else
+        {
+            _statusMessage = result.Error ?? "Failed to reset tournament.";
+            _isError = true;
+        }
+    }
+}
