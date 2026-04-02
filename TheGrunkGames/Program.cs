@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Linq;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using TheGrunkGames.Hubs;
 using TheGrunkGames.Services;
 
@@ -12,12 +14,18 @@ namespace TheGrunkGames
     {
         public static async Task Main(string[] args)
         {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+
             var builder = WebApplication.CreateBuilder(args);
             builder.AddServiceDefaults();
             builder.AddMongoDBClient("thegrunkgames");
 
             builder.Services.AddProblemDetails();
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
+                });
             builder.Services.AddSingleton<MatchmakingService>();
             builder.Services.AddSingleton<IStorageService, StorageService>();
             builder.Services.AddSingleton<IGameService, GameService>();
@@ -48,9 +56,7 @@ namespace TheGrunkGames
             });
 
             app.MapControllers();
-            app.MapControllerRoute(
-                name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
+            app.MapGet("/", () => Results.Redirect("/openapi/v1.json"));
             app.MapHub<TournamentHub>("/hubs/tournament");
 
             await app.RunAsync();

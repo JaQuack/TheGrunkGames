@@ -6,14 +6,14 @@
 
 <div class="scoreboard">
     <div class="scoreboard-header">
-        <h1>?? Gustavs Spelt�vling 2025</h1>
+        <h1>🏆 Gustavs Speltävling @DateTime.Now.Year</h1>
     </div>
 
     <div class="scoreboard-section">
         <h2>Current Round</h2>
         @if (CurrentRound == null)
         {
-            <p class="no-round-message">Ingen aktiv runda spelas, eller s� har Jacob gjort n�got fel och allt �r kaos, ge honom �l som straff.</p>
+            <p class="no-round-message">Ingen aktiv runda spelas, eller så har Jacob gjort något fel och allt är kaos, ge honom öl som straff.</p>
         }
         else
         {
@@ -32,16 +32,16 @@
                         <div class="match-game">
                             @if (match.IsTimeTrial)
                             {
-                                <span>?? @match.Game?.Name</span>
+                                <span>⏱️ @match.Game?.Name</span>
                             }
                             else
                             {
-                                <span>??? @match.Game?.Name</span>
+                                <span>🎮 @match.Game?.Name</span>
                             }
                         </div>
                         @if (match.HasCompleted)
                         {
-                            <div class="match-score">@match.ScoreTeam1 � @match.ScoreTeam2</div>
+                            <div class="match-score">@match.ScoreTeam1 – @match.ScoreTeam2</div>
                         }
                     </div>
                 }
@@ -66,9 +66,9 @@
                     {
                         <tr class="@(i == 0 ? "first-place" : i == 1 ? "second-place" : i == 2 ? "third-place" : "")">
                             <td class="rank-col">
-                                @if (i == 0) { <span>??</span> }
-                                else if (i == 1) { <span>??</span> }
-                                else if (i == 2) { <span>??</span> }
+                                @if (i == 0) { <span>🥇</span> }
+                                else if (i == 1) { <span>🥈</span> }
+                                else if (i == 2) { <span>🥉</span> }
                                 else { <span>@(i + 1)</span> }
                             </td>
                             <td>@TeamStandings[i].TeamName</td>
