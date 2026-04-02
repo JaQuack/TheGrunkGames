@@ -1,0 +1,43 @@
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="alert @(IsError ? "alert-danger" : "alert-success") alert-dismissible fade show" role="alert">
+        @Message
+        <button type="button" class="btn-close" @onclick="Dismiss" aria-label="Close"></button>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public bool IsError { get; set; }
+    [Parameter] public EventCallback OnDismissed { get; set; }
+
+    private CancellationTokenSource? _cts;
+
+    protected override void OnParametersSet()
+    {
+        _cts?.Cancel();
+
+        if (!string.IsNullOrEmpty(Message))
+        {
+            _cts = new CancellationTokenSource();
+            _ = AutoDismissAsync(_cts.Token);
+        }
+    }
+
+    private async Task AutoDismissAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(5000, token);
+            await Dismiss();
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private async Task Dismiss()
+    {
+        Message = null;
+        await OnDismissed.InvokeAsync();
+        StateHasChanged();
+    }
+}

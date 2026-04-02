@@ -1,0 +1,68 @@
+@page "/admin/standings"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Admin")]
+@inject GameServiceClient GameService
+
+<h3>Standings</h3>
+
+<StatusMessage Message="@_statusMessage" IsError="@_isError" OnDismissed="() => _statusMessage = null" />
+
+@if (_loading)
+{
+    <p>Loading...</p>
+}
+else if (_standings is not null && _standings.Count > 0)
+{
+    <table class="table table-striped" style="max-width: 500px;">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Team</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < _standings.Count; i++)
+            {
+                <tr>
+                    <td>@(i + 1)</td>
+                    <td>@_standings[i].TeamName</td>
+                    <td>@_standings[i].TeamScore</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No standings available.</p>
+}
+
+@code {
+    private List<TeamStanding>? _standings;
+    private bool _loading = true;
+    private string? _statusMessage;
+    private bool _isError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        try
+        {
+            var result = await GameService.GetTeamStandings();
+            if (result.Success)
+                _standings = result.Data;
+            else
+            {
+                _statusMessage = result.Error ?? "Failed to load standings.";
+                _isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to load standings: {ex.Message}";
+            _isError = true;
+        }
+        _loading = false;
+    }
+}

@@ -1,0 +1,169 @@
+.scoreboard {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 2rem 3rem;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.scoreboard-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+    .scoreboard-header h1 {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0;
+        text-shadow: 0 0 20px rgba(100, 150, 255, 0.3);
+    }
+
+.scoreboard-section {
+    margin-bottom: 2.5rem;
+}
+
+    .scoreboard-section h2 {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #a0b4ff;
+        border-bottom: 2px solid #2a2a4a;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.2rem;
+    }
+
+.no-round-message {
+    font-size: 1.3rem;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.match-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1rem;
+}
+
+.match-card {
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+    transition: transform 0.2s;
+}
+
+    .match-card:hover {
+        transform: scale(1.02);
+    }
+
+    .match-card.match-completed {
+        border-color: #2ecc71;
+        opacity: 0.7;
+    }
+
+.match-teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.team-name {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.team-left {
+    text-align: right;
+    flex: 1;
+}
+
+.team-right {
+    text-align: left;
+    flex: 1;
+}
+
+.vs-badge {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.15);
+    padding: 0.2rem 0.7rem;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.match-game {
+    text-align: center;
+    color: #a0b4ff;
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+}
+
+.match-score {
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #2ecc71;
+    margin-top: 0.4rem;
+}
+
+.standings-table {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    font-size: 1.5rem;
+}
+
+    .standings-table thead th {
+        color: #a0b4ff;
+        font-weight: 600;
+        border-bottom: 2px solid #2a2a4a;
+        padding: 0.6rem 1rem;
+        text-align: left;
+    }
+
+    .standings-table tbody tr {
+        border-bottom: 1px solid #2a2a4a;
+        transition: background 0.15s;
+    }
+
+        .standings-table tbody tr:hover {
+            background: rgba(100, 150, 255, 0.08);
+        }
+
+    .standings-table td {
+        padding: 0.7rem 1rem;
+    }
+
+.rank-col {
+    width: 60px;
+    text-align: center;
+}
+
+.score-col {
+    width: 100px;
+    text-align: right;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.first-place td {
+    color: #ffd700;
+    font-size: 1.7rem;
+}
+
+.second-place td {
+    color: #c0c0c0;
+    font-size: 1.6rem;
+}
+
+.third-place td {
+    color: #cd7f32;
+    font-size: 1.55rem;
+}

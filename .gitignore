@@ -365,3 +365,4 @@ FodyWeavers.xsd
 /TheGrunkGames/appsettings.Development.json
 /TheGrunkGames/Properties/ServiceDependencies/TheGrunkGames - Web Deploy
 /swagger.json
+.azure

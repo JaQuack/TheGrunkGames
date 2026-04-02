@@ -1,0 +1,185 @@
+<div class="card mb-1 @(Match.HasCompleted ? "border-success" : "")">
+    <div class="card-body p-2">
+        <div class="d-flex justify-content-between align-items-center small">
+            <div>
+                <strong>Match #@Match.MatchId</strong>
+                @if (Match.IsTimeTrial)
+                {
+                    <span class="badge bg-info ms-1" style="font-size:.75em">Time Trial</span>
+                }
+                @if (Match.HasCompleted)
+                {
+                    <span class="badge bg-success ms-1" style="font-size:.75em">Completed</span>
+                }
+            </div>
+            <span class="text-muted">@Match.Game?.Name (@Match.Game?.Device)</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 mt-1 small">
+            <strong>@Match.Team_1_Name</strong>
+            <span class="text-muted">vs</span>
+            <strong>@(Match.Team_2_Name ?? "—")</strong>
+            <span class="ms-auto text-muted">|</span>
+            @if (!Match.HasCompleted)
+            {
+                <input type="number" class="form-control form-control-sm" style="width:60px" placeholder="T1" @bind="_score1" />
+                <span class="text-muted">–</span>
+                <input type="number" class="form-control form-control-sm" style="width:60px" placeholder="T2" @bind="_score2" />
+                <button class="btn btn-primary btn-sm py-0 px-1" @onclick="CompleteMatch">Complete</button>
+            }
+            else
+            {
+                <span>@Match.ScoreTeam1 – @Match.ScoreTeam2</span>
+            }
+        </div>
+
+        @if (_editingTeams || _editingGame)
+        {
+            <div class="d-flex align-items-center gap-2 mt-1 small flex-wrap">
+                @if (_editingTeams)
+                {
+                    <select class="form-select form-select-sm" style="width:auto" @bind="_team1Name">
+                        @foreach (var t in Teams)
+                        {
+                            <option value="@t.TeamName">@t.TeamName</option>
+                        }
+                    </select>
+                    <span class="text-muted">vs</span>
+                    <select class="form-select form-select-sm" style="width:auto" @bind="_team2Name">
+                        <option value="">(Time Trial)</option>
+                        @foreach (var t in Teams)
+                        {
+                            <option value="@t.TeamName">@t.TeamName</option>
+                        }
+                    </select>
+                    <button class="btn btn-success btn-sm py-0 px-1" @onclick="SaveTeams">Save</button>
+                    <button class="btn btn-outline-secondary btn-sm py-0 px-1" @onclick="() => _editingTeams = false">Cancel</button>
+                }
+                @if (_editingGame)
+                {
+                    <select class="form-select form-select-sm" style="width:auto" @bind="_selectedGameName">
+                        @foreach (var g in Games)
+                        {
+                            <option value="@g.Name">@g.Name</option>
+                        }
+                    </select>
+                    <button class="btn btn-success btn-sm py-0 px-1" @onclick="SaveGame">Save</button>
+                    <button class="btn btn-outline-secondary btn-sm py-0 px-1" @onclick="() => _editingGame = false">Cancel</button>
+                }
+            </div>
+        }
+
+        <div class="d-flex gap-1 mt-1">
+            @if (!_editingGame)
+            {
+                <button class="btn btn-outline-secondary btn-sm py-0 px-1 small" @onclick="StartEditGame">Change Game</button>
+            }
+            @if (!_editingTeams)
+            {
+                <button class="btn btn-outline-secondary btn-sm py-0 px-1 small" @onclick="StartEditTeams">Change Teams</button>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(_localMessage))
+        {
+            <div class="alert @(_localIsError ? "alert-danger" : "alert-success") alert-dismissible mt-1 py-0 px-2 small mb-0" role="alert">
+                @_localMessage
+                <button type="button" class="btn-close" style="font-size:.5em;padding:.25rem" @onclick="() => _localMessage = null" aria-label="Close"></button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Match Match { get; set; } = default!;
+    [Parameter] public List<Team> Teams { get; set; } = [];
+    [Parameter] public List<Game> Games { get; set; } = [];
+    [Parameter] public EventCallback OnMatchChanged { get; set; }
+    [Parameter] public GameServiceClient? GameService { get; set; }
+
+    private int _score1;
+    private int _score2;
+    private bool _editingGame;
+    private string _selectedGameName = "";
+    private bool _editingTeams;
+    private string _team1Name = "";
+    private string _team2Name = "";
+    private string? _localMessage;
+    private bool _localIsError;
+
+    private async Task CompleteMatch()
+    {
+        if (GameService is null) return;
+
+        var result = new MatchResult
+        {
+            MatchId = Match.MatchId,
+            Team1Score = _score1,
+            Team2Score = _score2
+        };
+
+        var apiResult = await GameService.CompleteMatch(result);
+        if (apiResult.Success)
+        {
+            _localMessage = "Match completed.";
+            _localIsError = false;
+            await OnMatchChanged.InvokeAsync();
+        }
+        else
+        {
+            _localMessage = apiResult.Error ?? "Failed to complete match.";
+            _localIsError = true;
+        }
+    }
+
+    private void StartEditGame()
+    {
+        _selectedGameName = Match.Game?.Name ?? "";
+        _editingGame = true;
+    }
+
+    private async Task SaveGame()
+    {
+        if (GameService is null) return;
+
+        var result = await GameService.ChangeGameForMatch(Match.MatchId, _selectedGameName);
+        if (result.Success)
+        {
+            _editingGame = false;
+            _localMessage = "Game changed.";
+            _localIsError = false;
+            await OnMatchChanged.InvokeAsync();
+        }
+        else
+        {
+            _localMessage = result.Error ?? "Failed to change game.";
+            _localIsError = true;
+        }
+    }
+
+    private void StartEditTeams()
+    {
+        _team1Name = Match.Team_1_Name;
+        _team2Name = Match.Team_2_Name ?? "";
+        _editingTeams = true;
+    }
+
+    private async Task SaveTeams()
+    {
+        if (GameService is null) return;
+
+        var result = await GameService.ChangeTeamsForMatch(Match.MatchId, _team1Name, _team2Name);
+        if (result.Success)
+        {
+            _editingTeams = false;
+            _localMessage = "Teams changed.";
+            _localIsError = false;
+            await OnMatchChanged.InvokeAsync();
+        }
+        else
+        {
+            _localMessage = result.Error ?? "Failed to change teams.";
+            _localIsError = true;
+        }
+    }
+}

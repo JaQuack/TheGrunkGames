@@ -1,0 +1,36 @@
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Round @Round.RoundId</strong>
+            @if (Round.isStaging)
+            {
+                <span class="badge bg-warning text-dark ms-2">Staging</span>
+            }
+            @if (Round.IsCompleted())
+            {
+                <span class="badge bg-success ms-2">Completed</span>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        @if (Round.Matches is { Count: > 0 })
+        {
+            @foreach (var match in Round.Matches)
+            {
+                <MatchCard Match="match" Teams="Teams" Games="Games" GameService="GameService" OnMatchChanged="OnRoundChanged" />
+            }
+        }
+        else
+        {
+            <p class="text-muted">No matches in this round.</p>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Round Round { get; set; } = default!;
+    [Parameter] public List<Team> Teams { get; set; } = [];
+    [Parameter] public List<Game> Games { get; set; } = [];
+    [Parameter] public EventCallback OnRoundChanged { get; set; }
+    [Parameter] public GameServiceClient? GameService { get; set; }
+}

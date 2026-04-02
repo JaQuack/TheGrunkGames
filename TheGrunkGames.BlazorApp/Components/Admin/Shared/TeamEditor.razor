@@ -1,0 +1,40 @@
+<div class="card mb-2">
+    <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-2">
+            <div class="flex-grow-1">
+                <label class="form-label mb-1">Team Name</label>
+                <input type="text" class="form-control form-control-sm" @bind="Team.TeamName" />
+            </div>
+            <div class="pt-4">
+                <button type="button" class="btn btn-outline-danger btn-sm" @onclick="OnRemove" title="Remove team">✕</button>
+            </div>
+        </div>
+
+        <label class="form-label mb-1">Players</label>
+        @for (var i = 0; i < Team.Players.Count; i++)
+        {
+            var index = i;
+            <div class="input-group input-group-sm mb-1">
+                <input type="text" class="form-control" @bind="Team.Players[index].Name" placeholder="Player name" />
+                <button type="button" class="btn btn-outline-danger" @onclick="() => RemovePlayer(index)">✕</button>
+            </div>
+        }
+        <button type="button" class="btn btn-outline-secondary btn-sm mt-1" @onclick="AddPlayer">+ Player</button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Team Team { get; set; } = default!;
+    [Parameter] public EventCallback OnRemove { get; set; }
+
+    private void AddPlayer()
+    {
+        Team.Players.Add(new Player());
+    }
+
+    private void RemovePlayer(int index)
+    {
+        if (index >= 0 && index < Team.Players.Count)
+            Team.Players.RemoveAt(index);
+    }
+}

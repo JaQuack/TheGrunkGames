@@ -1,0 +1,103 @@
+@page "/admin/history"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Admin")]
+@inject GameServiceClient GameService
+
+<h3>Tournament History</h3>
+
+<StatusMessage Message="@_statusMessage" IsError="@_isError" OnDismissed="() => _statusMessage = null" />
+
+@if (_loading)
+{
+    <p>Loading...</p>
+}
+else if (_history is not null && _history.Count > 0)
+{
+    <table class="table table-striped" style="max-width: 700px;">
+        <thead>
+            <tr>
+                <th>Year</th>
+                <th>Round Version</th>
+                <th>Saved At (UTC)</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in _history)
+            {
+                <tr>
+                    <td>@entry.Year</td>
+                    <td>@entry.RoundVersion</td>
+                    <td>@entry.SavedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>
+                        @if (_confirmRestoreId == entry.Id)
+                        {
+                            <button class="btn btn-sm btn-danger me-1" @onclick="() => RestoreSnapshot(entry.Id, entry.Year)">Confirm</button>
+                            <button class="btn btn-sm btn-secondary" @onclick="() => _confirmRestoreId = null">Cancel</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => _confirmRestoreId = entry.Id">Restore</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="text-muted">No history available. History is only stored when connected to MongoDB.</p>
+}
+
+@code {
+    private List<TournamentHistorySummary>? _history;
+    private bool _loading = true;
+    private string? _statusMessage;
+    private bool _isError;
+    private string? _confirmRestoreId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHistory();
+    }
+
+    private async Task LoadHistory()
+    {
+        _loading = true;
+        try
+        {
+            var result = await GameService.GetTournamentHistory();
+            if (result.Success)
+                _history = result.Data;
+            else
+            {
+                _statusMessage = result.Error ?? "Failed to load history.";
+                _isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to load history: {ex.Message}";
+            _isError = true;
+        }
+        _loading = false;
+    }
+
+    private async Task RestoreSnapshot(string version, string year)
+    {
+        _confirmRestoreId = null;
+
+        var result = await GameService.RestoreTournament(version, year);
+        if (result.Success)
+        {
+            _statusMessage = $"Tournament restored to version {version}.";
+            _isError = false;
+        }
+        else
+        {
+            _statusMessage = result.Error ?? "Failed to restore tournament.";
+            _isError = true;
+        }
+    }
+}

@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>The Grunkgames 2024 - Admin - Match scoring</title>
+    <title>The Grunkgames 2025 - Admin - Match scoring</title>
 </head>
 
 <body>
@@ -10,7 +10,7 @@
 </body>
 <script>
     var GetCurrentRound = function () {
-        fetch("https://thegrunkgames.azurewebsites.net/Game/GetCurrentRound")
+        fetch("https://localhost:5001/Game/GetCurrentRound")
             .then((response) => response.json())
             .then((json) => PrintCurrentRound(json));
     }
@@ -23,14 +23,14 @@
             element.innerHTML = "Ingen aktiv runda spelas";
         }
         else {
-            json.Matches.forEach(match => {
-                element.innerHTML += "<div> MatchId: " + match.MatchId + " <button onclick=\"ScoreMatch(" + match.MatchId + ",1)\">" + match.Team_1_Name + ", Score: " + match.ScoreTeam1 + "</button> VS <button onclick=\"ScoreMatch(" + match.MatchId + ",2)\">" + match.Team_2_Name + ", Score: " + match.ScoreTeam2 + "</button> <button onclick=\"ScoreMatch(" + match.MatchId + ",0)\">Lika</button> Playing: " + match.Game.Name + "</div>";
+            json.matches.forEach(match => {
+                element.innerHTML += "<div> MatchId: " + match.matchId + " <button onclick=\"ScoreMatch(" + match.matchId + ",1)\">" + match.team_1_Name + ", Score: " + match.scoreTeam1 + "</button> VS <button onclick=\"ScoreMatch(" + match.matchId + ",2)\">" + match.team_2_Name + ", Score: " + match.scoreTeam2 + "</button> <button onclick=\"ScoreMatch(" + match.matchId + ",0)\">Lika</button> Playing: " + match.game.name + "</div>";
             });
         }
     }
 
     function ScoreMatch(matchId, scoringTeam) {
-        fetch("https://thegrunkgames.azurewebsites.net/Game/CompleteMatch", {
+        fetch("https://localhost:5001/Game/CompleteMatch", {
             method: "POST",
             body: JSON.stringify({
                 matchId: matchId,

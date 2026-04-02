@@ -1,0 +1,109 @@
+@page "/admin/stats"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Admin")]
+@inject GameServiceClient GameService
+
+<h3>Team Stats</h3>
+
+<StatusMessage Message="@_statusMessage" IsError="@_isError" OnDismissed="() => _statusMessage = null" />
+
+@if (_loading)
+{
+    <p>Loading...</p>
+}
+else if (_stats is not null && _stats.Count > 0)
+{
+    <div class="row">
+        @foreach (var team in _stats)
+        {
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card">
+                    <div class="card-header fw-bold">@team.TeamName</div>
+                    <div class="card-body">
+                        @if (team.PlayedAgainstTeam.Count > 0)
+                        {
+                            <h6>Played Against</h6>
+                            <table class="table table-sm table-striped mb-3">
+                                <thead>
+                                    <tr>
+                                        <th>Opponent</th>
+                                        <th>Times</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var opponent in team.PlayedAgainstTeam)
+                                    {
+                                        <tr>
+                                            <td>@opponent.Key</td>
+                                            <td>@opponent.Value</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+
+                        @if (team.PlayedGames.Count > 0)
+                        {
+                            <h6>Games Played</h6>
+                            <table class="table table-sm table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Game</th>
+                                        <th>Times</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var game in team.PlayedGames)
+                                    {
+                                        <tr>
+                                            <td>@game.Key</td>
+                                            <td>@game.Value</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+
+                        @if (team.PlayedAgainstTeam.Count == 0 && team.PlayedGames.Count == 0)
+                        {
+                            <p class="text-muted mb-0">No matches played yet.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <p>No team stats available.</p>
+}
+
+@code {
+    private List<TheGrunkGames.Models.TournamentModels.TeamStats>? _stats;
+    private bool _loading = true;
+    private string? _statusMessage;
+    private bool _isError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        try
+        {
+            var result = await GameService.GetTeamStats();
+            if (result.Success)
+                _stats = result.Data;
+            else
+            {
+                _statusMessage = result.Error ?? "Failed to load team stats.";
+                _isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to load team stats: {ex.Message}";
+            _isError = true;
+        }
+        _loading = false;
+    }
+}

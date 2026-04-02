@@ -1,0 +1,87 @@
+@page "/admin/games"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Admin")]
+@inject GameServiceClient GameService
+
+<h3>Manage Games</h3>
+
+<StatusMessage Message="@_statusMessage" IsError="@_isError" OnDismissed="() => _statusMessage = null" />
+
+@if (_loading)
+{
+    <p>Loading...</p>
+}
+else if (_games is not null)
+{
+    @foreach (var game in _games)
+    {
+        <TheGrunkGames.BlazorApp.Components.Admin.Shared.GameEditor Game="game" OnRemove="() => RemoveGame(game)" />
+    }
+
+    <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-outline-primary btn-sm" @onclick="AddGame">+ Add Game</button>
+        <button class="btn btn-success btn-sm" @onclick="SaveAll">Save All</button>
+    </div>
+}
+
+@code {
+    private List<Game>? _games;
+    private bool _loading = true;
+    private string? _statusMessage;
+    private bool _isError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGames();
+    }
+
+    private async Task LoadGames()
+    {
+        _loading = true;
+        try
+        {
+            var result = await GameService.GetGames();
+            if (result.Success)
+                _games = result.Data ?? [];
+            else
+            {
+                _statusMessage = result.Error ?? "Failed to load games.";
+                _isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to load games: {ex.Message}";
+            _isError = true;
+        }
+        _loading = false;
+    }
+
+    private void AddGame()
+    {
+        _games ??= [];
+        _games.Add(new Game { Name = "", Device = Device.Undefined });
+    }
+
+    private void RemoveGame(Game game)
+    {
+        _games?.Remove(game);
+    }
+
+    private async Task SaveAll()
+    {
+        if (_games is null) return;
+
+        var result = await GameService.SetGames(_games);
+        if (result.Success)
+        {
+            _statusMessage = "Games saved.";
+            _isError = false;
+        }
+        else
+        {
+            _statusMessage = result.Error ?? "Failed to save games.";
+            _isError = true;
+        }
+    }
+}

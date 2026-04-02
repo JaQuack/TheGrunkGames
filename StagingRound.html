@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>The Grunkgames 2024 - Admin  - Round stageing</title>
+    <title>The Grunkgames 2025 - Admin  - Round stageing</title>
 </head>
 
 <body>
@@ -13,7 +13,7 @@
 </body>
 <script>
     var GetStagingRound = function () {
-        fetch("https://thegrunkgames.azurewebsites.net/Game/GetNextRound_Staging")
+        fetch("https://localhost:5001/Game/GetNextRound_Staging")
             .then((response) => response.json())
             .then((json) => PrintStageingRound(json));
     }
@@ -21,7 +21,7 @@
     var SetStaging = function () {
         var roundId = document.getElementById("RoundId").innerHTML;
         if (roundId !== "" && roundId !== undefined) {
-            fetch("https://thegrunkgames.azurewebsites.net/Game/SetStaging?activate=true&roundId=" + roundId)
+            fetch("https://localhost:5001/Game/SetStaging?activate=true&roundId=" + roundId)
                 .then((response) => response.json())
                 .then((json) => PrintStageingRound(json));
         }
@@ -32,10 +32,10 @@
     function PrintStageingRound(json) {
         var element = document.getElementById("Stageing");
         element.innerHTML = "";
-        var roundId = json.RoundId;
+        var roundId = json.roundId;
         document.getElementById("RoundId").innerHTML = roundId;
-        json.Matches.forEach(match => {
-            element.innerHTML += "<div> Round: " + roundId + " <b>" + match.Team_1_Name + "</b> VS <b>" + match.Team_2_Name + "</b> Playing: " + match.Game.Name + ", IsPreview/staging:" + json.isStaging + "</div>"
+        json.matches.forEach(match => {
+            element.innerHTML += "<div> Round: " + roundId + " <b>" + match.team_1_Name + "</b> VS <b>" + match.team_2_Name + "</b> Playing: " + match.game.name + ", IsPreview/staging:" + json.isStaging + "</div>"
         });
     }
 

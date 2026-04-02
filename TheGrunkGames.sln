@@ -1,9 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.32228.343
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36221.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheGrunkGames", "TheGrunkGames\TheGrunkGames.csproj", "{57B491ED-DAB8-483A-BA06-AE20483DA5B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheGrunkGames.Tests", "TheGrunkGames.Tests\TheGrunkGames.Tests.csproj", "{3076E84A-22A1-49FB-9C54-9954A60200A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheGrunkGames.Aspire", "TheGrunkGames.Aspire\TheGrunkGames.Aspire.csproj", "{A2ECD36A-3109-4C3E-AD86-1D234F31A507}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheGrunkGames.Models", "TheGrunkGames.Models\TheGrunkGames.Models.csproj", "{A2B150D0-FB4F-4D34-B26C-220C94B8ED7B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheGrunkGames.ServiceDefaults", "TheGrunkGames.ServiceDefaults\TheGrunkGames.ServiceDefaults.csproj", "{C8921CFA-1707-40CC-B592-248C5CEC5B0F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheGrunkGames.BlazorApp", "TheGrunkGames.BlazorApp\TheGrunkGames.BlazorApp.csproj", "{921BE2E5-2DB9-4C2A-4271-AB8B162C04BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +25,26 @@ Global
 		{57B491ED-DAB8-483A-BA06-AE20483DA5B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57B491ED-DAB8-483A-BA06-AE20483DA5B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{57B491ED-DAB8-483A-BA06-AE20483DA5B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3076E84A-22A1-49FB-9C54-9954A60200A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3076E84A-22A1-49FB-9C54-9954A60200A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3076E84A-22A1-49FB-9C54-9954A60200A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3076E84A-22A1-49FB-9C54-9954A60200A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2ECD36A-3109-4C3E-AD86-1D234F31A507}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2ECD36A-3109-4C3E-AD86-1D234F31A507}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2ECD36A-3109-4C3E-AD86-1D234F31A507}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2ECD36A-3109-4C3E-AD86-1D234F31A507}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2B150D0-FB4F-4D34-B26C-220C94B8ED7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2B150D0-FB4F-4D34-B26C-220C94B8ED7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2B150D0-FB4F-4D34-B26C-220C94B8ED7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2B150D0-FB4F-4D34-B26C-220C94B8ED7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8921CFA-1707-40CC-B592-248C5CEC5B0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8921CFA-1707-40CC-B592-248C5CEC5B0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8921CFA-1707-40CC-B592-248C5CEC5B0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8921CFA-1707-40CC-B592-248C5CEC5B0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{921BE2E5-2DB9-4C2A-4271-AB8B162C04BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{921BE2E5-2DB9-4C2A-4271-AB8B162C04BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{921BE2E5-2DB9-4C2A-4271-AB8B162C04BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{921BE2E5-2DB9-4C2A-4271-AB8B162C04BC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

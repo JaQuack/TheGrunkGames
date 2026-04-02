@@ -1,0 +1,121 @@
+@page "/admin/teams"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Admin")]
+@inject GameServiceClient GameService
+
+<h3>Manage Teams</h3>
+
+<StatusMessage Message="@_statusMessage" IsError="@_isError" OnDismissed="() => _statusMessage = null" />
+
+@if (_loading)
+{
+    <p>Loading...</p>
+}
+else if (_teams is not null)
+{
+    @foreach (var team in _teams)
+    {
+        <div class="mb-3">
+            <TheGrunkGames.BlazorApp.Components.Admin.Shared.TeamEditor Team="team" OnRemove="() => RemoveTeam(team)" />
+
+            <div class="d-flex align-items-center gap-2 ms-3 mt-1">
+                <span class="text-muted small">Extra points: @team.ExtraPoints</span>
+                <input type="number" class="form-control form-control-sm" style="width:80px" @bind="_extraPointsInput[team]" />
+                <button class="btn btn-outline-secondary btn-sm" @onclick="() => AddExtraPoints(team)">Add Points</button>
+            </div>
+        </div>
+    }
+
+    <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-outline-primary btn-sm" @onclick="AddTeam">+ Add Team</button>
+        <button class="btn btn-success btn-sm" @onclick="SaveAll">Save All</button>
+    </div>
+}
+
+@code {
+    private List<Team>? _teams;
+    private bool _loading = true;
+    private string? _statusMessage;
+    private bool _isError;
+    private Dictionary<Team, int> _extraPointsInput = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTeams();
+    }
+
+    private async Task LoadTeams()
+    {
+        _loading = true;
+        try
+        {
+            var result = await GameService.GetTeams();
+            if (result.Success)
+            {
+                _teams = result.Data ?? [];
+                _extraPointsInput = _teams.ToDictionary(t => t, _ => 0);
+            }
+            else
+            {
+                _statusMessage = result.Error ?? "Failed to load teams.";
+                _isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to load teams: {ex.Message}";
+            _isError = true;
+        }
+        _loading = false;
+    }
+
+    private void AddTeam()
+    {
+        _teams ??= [];
+        var team = new Team { TeamName = "", Players = [new Player()] };
+        _teams.Add(team);
+        _extraPointsInput[team] = 0;
+    }
+
+    private void RemoveTeam(Team team)
+    {
+        _teams?.Remove(team);
+        _extraPointsInput.Remove(team);
+    }
+
+    private async Task SaveAll()
+    {
+        if (_teams is null) return;
+
+        var result = await GameService.SetTeams(_teams);
+        if (result.Success)
+        {
+            _statusMessage = "Teams saved.";
+            _isError = false;
+        }
+        else
+        {
+            _statusMessage = result.Error ?? "Failed to save teams.";
+            _isError = true;
+        }
+    }
+
+    private async Task AddExtraPoints(Team team)
+    {
+        if (!_extraPointsInput.TryGetValue(team, out var points) || points == 0) return;
+
+        var result = await GameService.AddExtraPoints(team.TeamName, points);
+        if (result.Success)
+        {
+            _statusMessage = $"Added {points} extra points to {team.TeamName}.";
+            _isError = false;
+            _extraPointsInput[team] = 0;
+            await LoadTeams();
+        }
+        else
+        {
+            _statusMessage = result.Error ?? $"Failed to add extra points to {team.TeamName}.";
+            _isError = true;
+        }
+    }
+}
