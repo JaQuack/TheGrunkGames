@@ -50,7 +50,10 @@ public class Program
                 options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
             })
-            .AddCookie()
+            .AddCookie(options =>
+            {
+                options.AccessDeniedPath = "/access-denied";
+            })
             .AddOpenIdConnect(options =>
             {
                 options.Authority = oidcAuthority;
