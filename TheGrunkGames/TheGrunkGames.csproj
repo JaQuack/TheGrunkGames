@@ -4,11 +4,12 @@
 	<TargetFramework>net10.0</TargetFramework>
 	  <ImplicitUsings>enable</ImplicitUsings>
 	  <Nullable>enable</Nullable>
+	  <UserSecretsId>b64008f7-3dbf-4806-b3d9-a0deba7b905f</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-	<PackageReference Include="Aspire.Azure.Data.Tables" Version="13.2.1" />
-	<PackageReference Include="Aspire.MongoDB.Driver" Version="13.2.1" />
+	<PackageReference Include="Aspire.Azure.Data.Tables" Version="13.2.2" />
+	<PackageReference Include="Aspire.MongoDB.Driver" Version="13.2.2" />
 	<PackageReference Include="Azure.Data.Tables" Version="12.11.0" />
 	<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.4" />
 	<PackageReference Include="Scalar.AspNetCore" Version="2.2.5" />

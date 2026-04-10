@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson.Serialization.Conventions;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,9 @@ namespace TheGrunkGames.Services
         {
             ConventionRegistry.Register("IgnoreExtraElements",
                 new ConventionPack { new IgnoreExtraElementsConvention(true) },
+                _ => true);
+            ConventionRegistry.Register("EnumAsString",
+                new ConventionPack { new EnumRepresentationConvention(BsonType.String) },
                 _ => true);
         }
 

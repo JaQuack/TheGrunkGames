@@ -25,13 +25,14 @@ namespace TheGrunkGames
 
             var archiveConnectionString = builder.Configuration.GetConnectionString("archiveTables");
             if (!string.IsNullOrEmpty(archiveConnectionString))
-                builder.AddAzureTableClient("archiveTables");
+                builder.AddAzureTableServiceClient("archiveTables");
 
             builder.Services.AddProblemDetails();
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>
                 {
                     options.JsonSerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
+                    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
                 });
             builder.Services.AddSingleton<MatchmakingService>();
             builder.Services.AddSingleton<ITournamentArchiveService>(sp =>

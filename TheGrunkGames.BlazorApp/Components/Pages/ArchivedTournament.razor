@@ -46,7 +46,13 @@
                                 else if (i == 2) { <span>🥉</span> }
                                 else { <span>@(i + 1)</span> }
                             </td>
-                            <td>@Standings[i].TeamName</td>
+                            <td>
+                                @Standings[i].TeamName
+                                @if (Standings[i].ExtraPoints != 0)
+                                {
+                                    <span class="extra-points-badge" title="Extra points">+@Standings[i].ExtraPoints</span>
+                                }
+                            </td>
                             <td class="score-col">@Standings[i].Score</td>
                         </tr>
                     }
@@ -66,7 +72,7 @@
                             {
                                 <h6>Opponents</h6>
                                 <table class="mini-table">
-                                    <thead><tr><th>Team</th><th>Played</th><th>W</th><th>L</th></tr></thead>
+                                    <thead><tr><th>Team</th><th>Played</th><th>W</th><th>D</th><th>L</th></tr></thead>
                                     <tbody>
                                         @foreach (var opp in team.Opponents)
                                         {
@@ -74,6 +80,7 @@
                                                 <td>@opp.Name</td>
                                                 <td>@opp.TimesPlayed</td>
                                                 <td class="win">@opp.Wins</td>
+                                                <td class="draw">@opp.Draws</td>
                                                 <td class="loss">@opp.Losses</td>
                                             </tr>
                                         }
@@ -84,13 +91,22 @@
                             {
                                 <h6>Games</h6>
                                 <table class="mini-table">
-                                    <thead><tr><th>Game</th><th>Times</th></tr></thead>
+                                    <thead><tr><th>Game</th><th>Times</th><th>Results</th></tr></thead>
                                     <tbody>
                                         @foreach (var game in team.Games)
                                         {
                                             <tr>
                                                 <td>@game.Name</td>
                                                 <td>@game.TimesPlayed</td>
+                                                <td class="game-results">
+                                                    @for (var r = 0; r < game.Results.Count; r++)
+                                                    {
+                                                        @if (r > 0) { <span class="result-sep">,</span> }
+                                                        <span class="@($"result-{char.ToLower(game.Results[r])}")">
+                                                            @game.Results[r]
+                                                        </span>
+                                                    }
+                                                </td>
                                             </tr>
                                         }
                                     </tbody>
@@ -175,7 +191,7 @@
         if (TournamentData is null) return;
 
         Standings = TournamentData.Teams
-            .Select(t => new StandingEntry { TeamName = t.TeamName, Score = t.CurrentScore })
+            .Select(t => new StandingEntry { TeamName = t.TeamName, Score = t.CurrentScore, ExtraPoints = t.ExtraPoints })
             .OrderByDescending(s => s.Score)
             .ToList();
 
@@ -210,7 +226,13 @@
                     var theirScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam2 : m.ScoreTeam1;
                     return m.HasCompleted && myScore < theirScore;
                 });
-                entry.Opponents.Add(new OpponentEntry { Name = oppName!, TimesPlayed = matches.Count, Wins = wins, Losses = losses });
+                var draws = matches.Count(m =>
+                {
+                    var myScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam1 : m.ScoreTeam2;
+                    var theirScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam2 : m.ScoreTeam1;
+                    return m.HasCompleted && myScore == theirScore;
+                });
+                entry.Opponents.Add(new OpponentEntry { Name = oppName!, TimesPlayed = matches.Count, Wins = wins, Draws = draws, Losses = losses });
             }
 
             var games = team.MatchesPlayed
@@ -220,8 +242,15 @@
 
             foreach (var gameName in games)
             {
-                var count = team.MatchesPlayed.Count(m => m.Game?.Name == gameName);
-                entry.Games.Add(new GameEntry { Name = gameName!, TimesPlayed = count });
+                var gameMatches = team.MatchesPlayed.Where(m => m.Game?.Name == gameName).ToList();
+                var results = gameMatches.Select(m =>
+                {
+                    if (!m.HasCompleted) return '-';
+                    var myScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam1 : m.ScoreTeam2;
+                    var theirScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam2 : m.ScoreTeam1;
+                    return myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : m.Game.Device.ToString().Equals("TIMETRIAL") ? '-' : 'D';
+                }).ToList();
+                entry.Games.Add(new GameEntry { Name = gameName!, TimesPlayed = gameMatches.Count, Results = results });
             }
 
             TeamStats.Add(entry);
@@ -234,8 +263,8 @@
             ExpandedRounds.Add(roundId);
     }
 
-    private class StandingEntry { public string TeamName { get; set; } = ""; public int Score { get; set; } }
+    private class StandingEntry { public string TeamName { get; set; } = ""; public int Score { get; set; } public int ExtraPoints { get; set; } }
     private class TeamStatEntry { public string TeamName { get; set; } = ""; public List<OpponentEntry> Opponents { get; set; } = []; public List<GameEntry> Games { get; set; } = []; }
-    private class OpponentEntry { public string Name { get; set; } = ""; public int TimesPlayed { get; set; } public int Wins { get; set; } public int Losses { get; set; } }
-    private class GameEntry { public string Name { get; set; } = ""; public int TimesPlayed { get; set; } }
+    private class OpponentEntry { public string Name { get; set; } = ""; public int TimesPlayed { get; set; } public int Wins { get; set; } public int Draws { get; set; } public int Losses { get; set; } }
+    private class GameEntry { public string Name { get; set; } = ""; public int TimesPlayed { get; set; } public List<char> Results { get; set; } = []; }
 }

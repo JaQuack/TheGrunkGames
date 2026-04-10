@@ -3,12 +3,17 @@ using Azure.Data.Tables;
 using System;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using TheGrunkGames.Models.TournamentModels;
 
 namespace TheGrunkGames.Entities
 {
     public class TournamentArchiveEntity : ITableEntity
     {
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            Converters = { new JsonStringEnumConverter() }
+        };
         public string PartitionKey { get; set; } = string.Empty;
         public string RowKey { get; set; } = string.Empty;
         public DateTimeOffset? Timestamp { get; set; }
@@ -43,7 +48,7 @@ namespace TheGrunkGames.Entities
                 TotalRounds = activeRounds.Count,
                 TotalTeams = tournament.Teams.Count,
                 TotalMatches = activeRounds.Sum(r => r.Matches.Count),
-                TournamentDataJson = JsonSerializer.Serialize(tournament)
+                TournamentDataJson = JsonSerializer.Serialize(tournament, _jsonOptions)
             };
         }
 
@@ -67,7 +72,7 @@ namespace TheGrunkGames.Entities
             if (string.IsNullOrEmpty(TournamentDataJson))
                 return null;
 
-            return JsonSerializer.Deserialize<Tournament>(TournamentDataJson);
+            return JsonSerializer.Deserialize<Tournament>(TournamentDataJson, _jsonOptions);
         }
     }
 }
