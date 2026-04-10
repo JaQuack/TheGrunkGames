@@ -39,90 +39,90 @@ jobs:
       ANSIBLE_TAGS: ${{ inputs.tags || 'compose' }}
       FULL_DEPLOY: ${{ inputs.full_deploy || false }}
     steps:
+      - name: Verify required tools exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh --version
+          jq --version
+
       - name: Send repository_dispatch to homelab
         id: dispatch
+        shell: bash
         env:
-          HOMELAB_REPO_DISPATCH_PAT: ${{ secrets.HOMELAB_REPO_DISPATCH_PAT }}
+          GH_TOKEN: ${{ secrets.HOMELAB_REPO_DISPATCH_PAT }}
         run: |
           set -euo pipefail
 
-          if [ -z "${HOMELAB_REPO_DISPATCH_PAT:-}" ]; then
+          if [ -z "${GH_TOKEN:-}" ]; then
             echo "Missing secret: HOMELAB_REPO_DISPATCH_PAT" >&2
             exit 1
           fi
 
-          dispatch_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "dispatch_time=${dispatch_time}" >> "$GITHUB_OUTPUT"
+          dispatch_epoch="$(date -u +%s)"
+          echo "dispatch_epoch=${dispatch_epoch}" >> "$GITHUB_OUTPUT"
 
-          curl -fsSL -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${HOMELAB_REPO_DISPATCH_PAT}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/JaQuack/homelab/dispatches \
-            -d @- <<JSON
-          {
-            "event_type": "aspire-deploy",
-            "client_payload": {
-              "target_host": "${TARGET_HOST}",
-              "repo_version": "${REPO_VERSION}",
-              "tags": "${ANSIBLE_TAGS}",
-              "full_deploy": ${FULL_DEPLOY}
-            }
-          }
-          JSON
+          payload="$(jq -n \
+            --arg event_type "aspire-deploy" \
+            --arg target_host "$TARGET_HOST" \
+            --arg repo_version "$REPO_VERSION" \
+            --arg tags "$ANSIBLE_TAGS" \
+            --arg full_deploy "$FULL_DEPLOY" \
+            '{
+              event_type: $event_type,
+              client_payload: {
+                target_host: $target_host,
+                repo_version: $repo_version,
+                tags: $tags,
+                full_deploy: ($full_deploy == "true")
+              }
+            }')"
+
+          gh api \
+            --method POST \
+            repos/JaQuack/homelab/dispatches \
+            --input - <<< "$payload"
 
           {
             echo "## Homelab deploy requested"
             echo ""
+            echo "- Homelab workflow: https://github.com/JaQuack/homelab/actions/workflows/aspire-deploy.yml"
             echo "- Target host: \`${TARGET_HOST}\`"
             echo "- Repo version: \`${REPO_VERSION}\`"
             echo "- Tags: \`${ANSIBLE_TAGS}\`"
             echo "- Full deploy: \`${FULL_DEPLOY}\`"
-            echo "- Dispatch time (UTC): \`${dispatch_time}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Locate homelab workflow run
         id: locate
+        shell: bash
         env:
-          HOMELAB_REPO_DISPATCH_PAT: ${{ secrets.HOMELAB_REPO_DISPATCH_PAT }}
-          DISPATCH_TIME: ${{ steps.dispatch.outputs.dispatch_time }}
+          GH_TOKEN: ${{ secrets.HOMELAB_REPO_DISPATCH_PAT }}
+          DISPATCH_EPOCH: ${{ steps.dispatch.outputs.dispatch_epoch }}
         run: |
           set -euo pipefail
 
           for attempt in $(seq 1 24); do
-            response="$(curl -fsSL \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer ${HOMELAB_REPO_DISPATCH_PAT}" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "https://api.github.com/repos/JaQuack/homelab/actions/workflows/aspire-deploy.yml/runs?event=repository_dispatch&per_page=10")"
+            run_json="$(gh run list \
+              --repo JaQuack/homelab \
+              --workflow aspire-deploy.yml \
+              --event repository_dispatch \
+              --limit 10 \
+              --json databaseId,createdAt,status \
+              --jq 'map(select(((.createdAt | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime) >= ((env.DISPATCH_EPOCH | tonumber) - 10))))[0]')"
 
-            mapfile -t run_info < <(
-              RESPONSE="$response" DISPATCH_TIME="$DISPATCH_TIME" python3 - <<'PY'
-              import datetime, json, os
-              
-              data = json.loads(os.environ["RESPONSE"])
-              dispatch_time = datetime.datetime.fromisoformat(os.environ["DISPATCH_TIME"].replace("Z", "+00:00"))
-              
-              for run in data.get("workflow_runs", []):
-                  created_at = run.get("created_at")
-                  if not created_at:
-                      continue
-                  created_dt = datetime.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-                  if created_dt >= dispatch_time - datetime.timedelta(seconds=5):
-                      print(run["id"])
-                      print(run["html_url"])
-                      print(run.get("status", "queued"))
-                      break
-              PY
-            )
-
-            if [ "${#run_info[@]}" -ge 2 ] && [ -n "${run_info[0]:-}" ]; then
-              echo "run_id=${run_info[0]}" >> "$GITHUB_OUTPUT"
-              echo "run_url=${run_info[1]}" >> "$GITHUB_OUTPUT"
-              echo "initial_status=${run_info[2]:-queued}" >> "$GITHUB_OUTPUT"
-              echo "Homelab workflow: ${run_info[1]}"
-              echo "- Homelab workflow: ${run_info[1]}" >> "$GITHUB_STEP_SUMMARY"
-              exit 0
+            if [ -n "${run_json}" ] && [ "${run_json}" != "null" ]; then
+              run_id="$(jq -r '.databaseId // empty' <<< "$run_json")"
+              status="$(jq -r '.status // "queued"' <<< "$run_json")"
+              if [ -n "$run_id" ]; then
+                run_url="https://github.com/JaQuack/homelab/actions/runs/${run_id}"
+                echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+                echo "run_url=${run_url}" >> "$GITHUB_OUTPUT"
+                echo "initial_status=${status}" >> "$GITHUB_OUTPUT"
+                echo "Homelab workflow run: ${run_url}"
+                echo "- Live run: ${run_url}" >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
             fi
 
             echo "Waiting for homelab workflow to appear (attempt ${attempt}/24)..."
@@ -133,18 +133,19 @@ jobs:
           exit 1
 
       - name: Watch homelab deploy progress
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.HOMELAB_REPO_DISPATCH_PAT }}
           RUN_ID: ${{ steps.locate.outputs.run_id }}
           RUN_URL: ${{ steps.locate.outputs.run_url }}
         run: |
           set -euo pipefail
-          gh --version
           echo "Watching ${RUN_URL}"
           gh run watch "$RUN_ID" --repo JaQuack/homelab --interval 10 --exit-status
 
       - name: Show failed homelab logs
         if: ${{ failure() && steps.locate.outputs.run_id != '' }}
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.HOMELAB_REPO_DISPATCH_PAT }}
           RUN_ID: ${{ steps.locate.outputs.run_id }}
