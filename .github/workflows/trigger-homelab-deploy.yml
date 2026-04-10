@@ -98,22 +98,22 @@ jobs:
 
             mapfile -t run_info < <(
               RESPONSE="$response" DISPATCH_TIME="$DISPATCH_TIME" python3 - <<'PY'
-import datetime, json, os
-
-data = json.loads(os.environ["RESPONSE"])
-dispatch_time = datetime.datetime.fromisoformat(os.environ["DISPATCH_TIME"].replace("Z", "+00:00"))
-
-for run in data.get("workflow_runs", []):
-    created_at = run.get("created_at")
-    if not created_at:
-        continue
-    created_dt = datetime.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-    if created_dt >= dispatch_time - datetime.timedelta(seconds=5):
-        print(run["id"])
-        print(run["html_url"])
-        print(run.get("status", "queued"))
-        break
-PY
+              import datetime, json, os
+              
+              data = json.loads(os.environ["RESPONSE"])
+              dispatch_time = datetime.datetime.fromisoformat(os.environ["DISPATCH_TIME"].replace("Z", "+00:00"))
+              
+              for run in data.get("workflow_runs", []):
+                  created_at = run.get("created_at")
+                  if not created_at:
+                      continue
+                  created_dt = datetime.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                  if created_dt >= dispatch_time - datetime.timedelta(seconds=5):
+                      print(run["id"])
+                      print(run["html_url"])
+                      print(run.get("status", "queued"))
+                      break
+              PY
             )
 
             if [ "${#run_info[@]}" -ge 2 ] && [ -n "${run_info[0]:-}" ]; then
