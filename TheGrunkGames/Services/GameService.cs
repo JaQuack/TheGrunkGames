@@ -328,21 +328,57 @@ namespace TheGrunkGames.Services
             var teamsStats = new List<TeamStats>();
             foreach (var team in (await GetTournament()).GetTeams())
             {
-                var teamsPlayedAgainst = team.MatchesPlayed.Select(x => x.GetOpponentsName(team.TeamName)).Where(x => x != null).Distinct();
-                var gamesPlayed = team.MatchesPlayed.Select(x => x.Game.Name).Distinct();
-                var teamStats = new TeamStats
+                var opponents = team.MatchesPlayed
+                    .Select(x => x.GetOpponentsName(team.TeamName))
+                    .Where(x => x != null)
+                    .Distinct();
+
+                var opponentStats = new List<OpponentStats>();
+                foreach (var oppName in opponents)
+                {
+                    var matches = team.MatchesPlayed.Where(m => m.IsTeamPlaying(oppName!)).ToList();
+                    var wins = matches.Count(m =>
+                    {
+                        var myScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam1 : m.ScoreTeam2;
+                        var theirScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam2 : m.ScoreTeam1;
+                        return m.HasCompleted && myScore > theirScore;
+                    });
+                    var losses = matches.Count(m =>
+                    {
+                        var myScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam1 : m.ScoreTeam2;
+                        var theirScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam2 : m.ScoreTeam1;
+                        return m.HasCompleted && myScore < theirScore;
+                    });
+                    var draws = matches.Count(m =>
+                    {
+                        var myScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam1 : m.ScoreTeam2;
+                        var theirScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam2 : m.ScoreTeam1;
+                        return m.HasCompleted && myScore == theirScore;
+                    });
+                    opponentStats.Add(new OpponentStats { Name = oppName!, TimesPlayed = matches.Count, Wins = wins, Draws = draws, Losses = losses });
+                }
+
+                var gameNames = team.MatchesPlayed.Select(x => x.Game.Name).Distinct();
+                var gameStats = new List<GameStats>();
+                foreach (var gameName in gameNames)
+                {
+                    var gameMatches = team.MatchesPlayed.Where(m => m.Game.Name == gameName).ToList();
+                    var results = gameMatches.Select(m =>
+                    {
+                        if (!m.HasCompleted) return '-';
+                        var myScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam1 : m.ScoreTeam2;
+                        var theirScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam2 : m.ScoreTeam1;
+                        return myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : m.IsTimeTrial ? '-' : 'D';
+                    }).ToList();
+                    gameStats.Add(new GameStats { Name = gameName, TimesPlayed = gameMatches.Count, Results = results });
+                }
+
+                teamsStats.Add(new TeamStats
                 {
                     TeamName = team.TeamName,
-                    PlayedAgainstTeam = teamsPlayedAgainst
-                        .Select(x => new KeyValuePair<string, int>(x!, team.MatchesPlayed.Count(y => y.IsTeamPlaying(x!))))
-                        .OrderByDescending(x => x.Value)
-                        .ToList(),
-                    PlayedGames = gamesPlayed
-                        .Select(x => new KeyValuePair<string, int>(x, team.MatchesPlayed.Count(y => y.Game.Name.Equals(x))))
-                        .OrderByDescending(x => x.Value)
-                        .ToList(),
-                };
-                teamsStats.Add(teamStats);
+                    PlayedAgainstTeam = opponentStats.OrderByDescending(x => x.TimesPlayed).ToList(),
+                    PlayedGames = gameStats.OrderByDescending(x => x.TimesPlayed).ToList(),
+                });
             }
             return teamsStats;
         }

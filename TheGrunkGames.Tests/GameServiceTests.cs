@@ -666,8 +666,8 @@ namespace TheGrunkGames.Tests
             var stats = await service.GetTeamStats();
 
             var alphaStats = stats.First(s => s.TeamName == "Alpha");
-            var bravoEntry = alphaStats.PlayedAgainstTeam.First(x => x.Key == "Bravo");
-            Assert.Equal(2, bravoEntry.Value);
+            var bravoEntry = alphaStats.PlayedAgainstTeam.First(x => x.Name == "Bravo");
+            Assert.Equal(2, bravoEntry.TimesPlayed);
         }
 
         [Fact]
@@ -706,15 +706,15 @@ namespace TheGrunkGames.Tests
             var stats = await service.GetTeamStats();
 
             var alphaStats = stats.First(s => s.TeamName == "Alpha");
-            Assert.Equal("Bravo", alphaStats.PlayedAgainstTeam[0].Key);
-            Assert.Equal(2, alphaStats.PlayedAgainstTeam[0].Value);
-            Assert.Equal("Charlie", alphaStats.PlayedAgainstTeam[1].Key);
-            Assert.Equal(1, alphaStats.PlayedAgainstTeam[1].Value);
+            Assert.Equal("Bravo", alphaStats.PlayedAgainstTeam[0].Name);
+            Assert.Equal(2, alphaStats.PlayedAgainstTeam[0].TimesPlayed);
+            Assert.Equal("Charlie", alphaStats.PlayedAgainstTeam[1].Name);
+            Assert.Equal(1, alphaStats.PlayedAgainstTeam[1].TimesPlayed);
 
-            Assert.Equal("GameA", alphaStats.PlayedGames[0].Key);
-            Assert.Equal(2, alphaStats.PlayedGames[0].Value);
-            Assert.Equal("GameB", alphaStats.PlayedGames[1].Key);
-            Assert.Equal(1, alphaStats.PlayedGames[1].Value);
+            Assert.Equal("GameA", alphaStats.PlayedGames[0].Name);
+            Assert.Equal(2, alphaStats.PlayedGames[0].TimesPlayed);
+            Assert.Equal("GameB", alphaStats.PlayedGames[1].Name);
+            Assert.Equal(1, alphaStats.PlayedGames[1].TimesPlayed);
         }
 
         #endregion

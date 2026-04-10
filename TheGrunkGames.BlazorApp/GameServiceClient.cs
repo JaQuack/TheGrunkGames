@@ -1,13 +1,23 @@
-﻿using TheGrunkGames.Models.TournamentModels;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using TheGrunkGames.Models.TournamentModels;
 
 namespace TheGrunkGames.BlazorApp
 {
     public class GameServiceClient
     {
         private readonly HttpClient _httpClient;
-        public GameServiceClient(HttpClient httpClient)
+        private readonly ILogger<GameServiceClient> _logger;
+
+        private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
+        {
+            Converters = { new JsonStringEnumConverter() }
+        };
+
+        public GameServiceClient(HttpClient httpClient, ILogger<GameServiceClient> logger)
         {
             _httpClient = httpClient;
+            _logger = logger;
         }
 
         private async Task<ApiResult> ExecuteAsync(Func<Task<HttpResponseMessage>> request)
@@ -15,11 +25,19 @@ namespace TheGrunkGames.BlazorApp
             try
             {
                 var response = await request();
-                return response.IsSuccessStatusCode
-                    ? ApiResult.Ok()
-                    : ApiResult.Fail(await response.Content.ReadAsStringAsync());
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("API request failed with {StatusCode}: {Body}", response.StatusCode, body);
+                    return ApiResult.Fail(body);
+                }
+                return ApiResult.Ok();
             }
-            catch (Exception ex) { return ApiResult.Fail(ex.Message); }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "API request threw an exception");
+                return ApiResult.Fail(ex.Message);
+            }
         }
 
         private async Task<ApiResult<T>> ExecuteAsync<T>(Func<Task<HttpResponseMessage>> request)
@@ -28,21 +46,33 @@ namespace TheGrunkGames.BlazorApp
             {
                 var response = await request();
                 if (!response.IsSuccessStatusCode)
-                    return ApiResult<T>.Fail(await response.Content.ReadAsStringAsync());
-                var data = await response.Content.ReadFromJsonAsync<T>();
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("API request failed with {StatusCode}: {Body}", response.StatusCode, body);
+                    return ApiResult<T>.Fail(body);
+                }
+                var data = await response.Content.ReadFromJsonAsync<T>(_jsonOptions);
                 return ApiResult<T>.Ok(data!);
             }
-            catch (Exception ex) { return ApiResult<T>.Fail(ex.Message); }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "API request threw an exception");
+                return ApiResult<T>.Fail(ex.Message);
+            }
         }
 
         private async Task<ApiResult<T>> GetJsonAsync<T>(string url)
         {
             try
             {
-                var data = await _httpClient.GetFromJsonAsync<T>(url);
+                var data = await _httpClient.GetFromJsonAsync<T>(url, _jsonOptions);
                 return ApiResult<T>.Ok(data!);
             }
-            catch (Exception ex) { return ApiResult<T>.Fail(ex.Message); }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GET {Url} threw an exception", url);
+                return ApiResult<T>.Fail(ex.Message);
+            }
         }
 
         public async Task<ApiResult<Round>> GetCurrentRound()
@@ -52,14 +82,18 @@ namespace TheGrunkGames.BlazorApp
                 var response = await _httpClient.GetAsync("/Game/GetCurrentRound");
                 if (response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.NoContent)
                 {
-                    var round = await response.Content.ReadFromJsonAsync<Round>();
+                    var round = await response.Content.ReadFromJsonAsync<Round>(_jsonOptions);
                     return round is not null
                         ? ApiResult<Round>.Ok(round)
                         : ApiResult<Round>.Fail("No round data returned");
                 }
                 return ApiResult<Round>.Ok(null!);
             }
-            catch (Exception ex) { return ApiResult<Round>.Fail(ex.Message); }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GET /Game/GetCurrentRound threw an exception");
+                return ApiResult<Round>.Fail(ex.Message);
+            }
         }
 
         public async Task<ApiResult<Round>> GetNextRound() =>

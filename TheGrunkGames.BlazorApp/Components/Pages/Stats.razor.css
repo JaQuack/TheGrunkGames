@@ -85,11 +85,20 @@
         padding: 0.5rem;
     }
 
-        .stats-table td:last-child {
-            text-align: right;
-            font-weight: 600;
-            color: #a0b4ff;
-        }
+.stats-table .win { color: #2ecc71; font-weight: 600; }
+.stats-table .draw { color: #f1c40f; font-weight: 600; }
+.stats-table .loss { color: #ff6b6b; font-weight: 600; }
+
+.game-results {
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+}
+
+.result-w { color: #2ecc71; }
+.result-d { color: #f1c40f; }
+.result-l { color: #ff6b6b; }
+.result-sep { color: #555; margin: 0 0.1rem; }
 
 .no-matches {
     color: #888;

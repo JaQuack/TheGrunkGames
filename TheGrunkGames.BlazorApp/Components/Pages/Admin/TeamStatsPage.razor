@@ -22,20 +22,26 @@ else if (_stats is not null && _stats.Count > 0)
                     <div class="card-body">
                         @if (team.PlayedAgainstTeam.Count > 0)
                         {
-                            <h6>Played Against</h6>
+                            <h6>Opponents</h6>
                             <table class="table table-sm table-striped mb-3">
                                 <thead>
                                     <tr>
-                                        <th>Opponent</th>
-                                        <th>Times</th>
+                                        <th>Team</th>
+                                        <th>Played</th>
+                                        <th>W</th>
+                                        <th>D</th>
+                                        <th>L</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var opponent in team.PlayedAgainstTeam)
+                                    @foreach (var opp in team.PlayedAgainstTeam)
                                     {
                                         <tr>
-                                            <td>@opponent.Key</td>
-                                            <td>@opponent.Value</td>
+                                            <td>@opp.Name</td>
+                                            <td>@opp.TimesPlayed</td>
+                                            <td class="text-success fw-bold">@opp.Wins</td>
+                                            <td class="text-warning fw-bold">@opp.Draws</td>
+                                            <td class="text-danger fw-bold">@opp.Losses</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -50,14 +56,25 @@ else if (_stats is not null && _stats.Count > 0)
                                     <tr>
                                         <th>Game</th>
                                         <th>Times</th>
+                                        <th>Results</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var game in team.PlayedGames)
                                     {
                                         <tr>
-                                            <td>@game.Key</td>
-                                            <td>@game.Value</td>
+                                            <td>@game.Name</td>
+                                            <td>@game.TimesPlayed</td>
+                                            <td>
+                                                @for (var r = 0; r < game.Results.Count; r++)
+                                                {
+                                                    @if (r > 0) { <span class="text-muted">,</span> }
+                                                    @if (game.Results[r] == 'W') { <span class="text-success fw-bold">W</span> }
+                                                    else if (game.Results[r] == 'D') { <span class="text-warning fw-bold">D</span> }
+                                                    else if (game.Results[r] == 'L') { <span class="text-danger fw-bold">L</span> }
+                                                    else { <span class="text-muted">-</span> }
+                                                }
+                                            </td>
                                         </tr>
                                     }
                                 </tbody>
