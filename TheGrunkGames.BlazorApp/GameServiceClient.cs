@@ -133,5 +133,23 @@ namespace TheGrunkGames.BlazorApp
 
         public async Task<ApiResult> RestoreTournament(string version, string year) =>
             await ExecuteAsync(() => _httpClient.PostAsync($"/Game/Tournament/Restore?version={Uri.EscapeDataString(version)}&year={Uri.EscapeDataString(year ?? "")}", null));
+
+        // Archive
+        public async Task<ApiResult> ArchiveTournament(string? name, string? tournamentId)
+        {
+            var query = new List<string>();
+            if (!string.IsNullOrWhiteSpace(name))
+                query.Add($"name={Uri.EscapeDataString(name)}");
+            if (!string.IsNullOrWhiteSpace(tournamentId))
+                query.Add($"tournamentId={Uri.EscapeDataString(tournamentId)}");
+            var qs = query.Count > 0 ? "?" + string.Join("&", query) : "";
+            return await ExecuteAsync(() => _httpClient.PostAsync($"/Game/Tournament/Archive{qs}", null));
+        }
+
+        public async Task<ApiResult<List<TournamentArchiveSummary>>> GetArchivedTournaments() =>
+            await GetJsonAsync<List<TournamentArchiveSummary>>("/Game/Tournament/Archives");
+
+        public async Task<ApiResult<Tournament>> GetArchivedTournament(string year, string tournamentId) =>
+            await GetJsonAsync<Tournament>($"/Game/Tournament/Archives/{Uri.EscapeDataString(year)}/{Uri.EscapeDataString(tournamentId)}");
     }
 }

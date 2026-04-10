@@ -1,6 +1,9 @@
+using Azure.Data.Tables;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Scalar.AspNetCore;
 using System;
 using System.Linq;
 using System.Text.Encodings.Web;
@@ -20,6 +23,10 @@ namespace TheGrunkGames
             builder.AddServiceDefaults();
             builder.AddMongoDBClient("thegrunkgames");
 
+            var archiveConnectionString = builder.Configuration.GetConnectionString("archiveTables");
+            if (!string.IsNullOrEmpty(archiveConnectionString))
+                builder.AddAzureTableClient("archiveTables");
+
             builder.Services.AddProblemDetails();
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>
@@ -27,6 +34,14 @@ namespace TheGrunkGames
                     options.JsonSerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
                 });
             builder.Services.AddSingleton<MatchmakingService>();
+            builder.Services.AddSingleton<ITournamentArchiveService>(sp =>
+            {
+                var logger = sp.GetRequiredService<ILogger<TournamentArchiveService>>();
+                var tableServiceClient = sp.GetService<TableServiceClient>();
+                return tableServiceClient != null
+                    ? new TournamentArchiveService(tableServiceClient, logger)
+                    : new TournamentArchiveService(logger);
+            });
             builder.Services.AddSingleton<IStorageService, StorageService>();
             builder.Services.AddSingleton<IGameService, GameService>();
             builder.Services.AddSignalR();
@@ -42,8 +57,9 @@ namespace TheGrunkGames
             if (app.Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.MapOpenApi();
+                app.MapScalarApiReference();
             }
-            app.MapOpenApi();
             app.UseHttpsRedirection();
             app.UseRouting();
 
@@ -56,7 +72,7 @@ namespace TheGrunkGames
             });
 
             app.MapControllers();
-            app.MapGet("/", () => Results.Redirect("/openapi/v1.json"));
+            app.MapGet("/", () => Results.Redirect("/scalar/v1"));
             app.MapHub<TournamentHub>("/hubs/tournament");
 
             await app.RunAsync();

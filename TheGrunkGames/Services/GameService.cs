@@ -13,13 +13,15 @@ namespace TheGrunkGames.Services
     {
         private readonly IStorageService _storageService;
         private readonly MatchmakingService _matchmakingService;
+        private readonly ITournamentArchiveService _archiveService;
         private readonly IHubContext<TournamentHub>? _hubContext;
         private readonly SemaphoreSlim _lock = new(1, 1);
 
-        public GameService(IStorageService storageService, MatchmakingService matchmakingService, IHubContext<TournamentHub>? hubContext = null)
+        public GameService(IStorageService storageService, MatchmakingService matchmakingService, ITournamentArchiveService archiveService, IHubContext<TournamentHub>? hubContext = null)
         {
             _storageService = storageService;
             _matchmakingService = matchmakingService;
+            _archiveService = archiveService;
             _hubContext = hubContext;
         }
 
@@ -400,6 +402,37 @@ namespace TheGrunkGames.Services
         public async Task<List<TournamentHistorySummary>> ListTournamentHistory()
         {
             return await _storageService.ListTournamentHistory();
+        }
+
+        #endregion
+
+        #region Archive
+
+        public async Task ArchiveTournamentAsync(string? tournamentName, string? tournamentId)
+        {
+            var tournament = await _storageService.GetTournament();
+
+            tournament.TournamentId = string.IsNullOrWhiteSpace(tournamentId)
+                ? $"{DateTime.UtcNow:yyyy-MM-dd}"
+                : tournamentId;
+
+            tournament.TournamentName = string.IsNullOrWhiteSpace(tournamentName)
+                ? $"Gustavs Speltävling {DateTime.UtcNow.Year}"
+                : tournamentName;
+
+            tournament.CompletedAt = DateTime.UtcNow;
+
+            await _archiveService.ArchiveTournamentAsync(tournament);
+        }
+
+        public async Task<List<TournamentArchiveSummary>> ListArchivedTournamentsAsync()
+        {
+            return await _archiveService.ListArchivedTournamentsAsync();
+        }
+
+        public async Task<Tournament?> GetArchivedTournamentAsync(string year, string tournamentId)
+        {
+            return await _archiveService.GetArchivedTournamentAsync(year, tournamentId);
         }
 
         #endregion

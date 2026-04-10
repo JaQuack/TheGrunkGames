@@ -10,9 +10,12 @@ var mongo = builder.AddMongoDB("mongodb")
     .WithDataVolume("thegrunkgames-mongo-data");
 var mongoDb = mongo.AddDatabase("thegrunkgames");
 
+var archiveTables = builder.AddConnectionString("archiveTables");
+
 var api = builder.AddProject<Projects.TheGrunkGames>("gameservice")
     .WithExternalHttpEndpoints()
     .WithReference(mongoDb)
+    .WithReference(archiveTables)
     .WaitFor(mongoDb);
 
 

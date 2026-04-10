@@ -1,0 +1,241 @@
+@page "/history/{Year}/{TournamentId}"
+@rendermode InteractiveServer
+@inject GameServiceClient gameServiceClient
+
+<div class="detail-page">
+    @if (_loading)
+    {
+        <p class="loading-message">Loading tournament...</p>
+    }
+    else if (TournamentData is null)
+    {
+        <p class="no-data">Tournament not found.</p>
+    }
+    else
+    {
+        <div class="detail-header">
+            <a href="/history" class="back-link">← Back to History</a>
+            <h1>@TournamentData.TournamentName</h1>
+            @if (TournamentData.CompletedAt.HasValue)
+            {
+                <p class="completed-date">Completed @TournamentData.CompletedAt.Value.ToString("yyyy-MM-dd")</p>
+            }
+            @if (!string.IsNullOrEmpty(Winner))
+            {
+                <div class="winner-banner">🏆 Champion: @Winner</div>
+            }
+        </div>
+
+        <div class="detail-section">
+            <h2>Final Standings</h2>
+            <table class="standings-table">
+                <thead>
+                    <tr>
+                        <th class="rank-col">#</th>
+                        <th>Team</th>
+                        <th class="score-col">Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < Standings.Count; i++)
+                    {
+                        <tr class="@(i == 0 ? "first-place" : i == 1 ? "second-place" : i == 2 ? "third-place" : "")">
+                            <td class="rank-col">
+                                @if (i == 0) { <span>🥇</span> }
+                                else if (i == 1) { <span>🥈</span> }
+                                else if (i == 2) { <span>🥉</span> }
+                                else { <span>@(i + 1)</span> }
+                            </td>
+                            <td>@Standings[i].TeamName</td>
+                            <td class="score-col">@Standings[i].Score</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="detail-section">
+            <h2>Team Stats</h2>
+            <div class="stats-grid">
+                @foreach (var team in TeamStats)
+                {
+                    <div class="team-stats-card">
+                        <div class="card-header">@team.TeamName</div>
+                        <div class="card-body">
+                            @if (team.Opponents.Count > 0)
+                            {
+                                <h6>Opponents</h6>
+                                <table class="mini-table">
+                                    <thead><tr><th>Team</th><th>Played</th><th>W</th><th>L</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var opp in team.Opponents)
+                                        {
+                                            <tr>
+                                                <td>@opp.Name</td>
+                                                <td>@opp.TimesPlayed</td>
+                                                <td class="win">@opp.Wins</td>
+                                                <td class="loss">@opp.Losses</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                            @if (team.Games.Count > 0)
+                            {
+                                <h6>Games</h6>
+                                <table class="mini-table">
+                                    <thead><tr><th>Game</th><th>Times</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var game in team.Games)
+                                        {
+                                            <tr>
+                                                <td>@game.Name</td>
+                                                <td>@game.TimesPlayed</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <h2>All Rounds</h2>
+            @foreach (var round in ActiveRounds)
+            {
+                <div class="round-block">
+                    <h3 class="round-title" @onclick="() => ToggleRound(round.RoundId)">
+                        Round @round.RoundId
+                        <span class="toggle-icon">@(ExpandedRounds.Contains(round.RoundId) ? "▾" : "▸")</span>
+                    </h3>
+                    @if (ExpandedRounds.Contains(round.RoundId))
+                    {
+                        <div class="match-grid">
+                            @foreach (var match in round.Matches)
+                            {
+                                <div class="match-card @(match.HasCompleted ? "match-completed" : "")">
+                                    <div class="match-teams">
+                                        <span class="team-name team-left">@match.Team_1_Name</span>
+                                        @if (!string.IsNullOrEmpty(match.Team_2_Name))
+                                        {
+                                            <span class="vs-badge">VS</span>
+                                            <span class="team-name team-right">@match.Team_2_Name</span>
+                                        }
+                                    </div>
+                                    <div class="match-game">
+                                        @if (match.IsTimeTrial)
+                                        { <span>⏱️ @match.Game?.Name</span> }
+                                        else
+                                        { <span>🎮 @match.Game?.Name</span> }
+                                    </div>
+                                    @if (match.HasCompleted)
+                                    {
+                                        <div class="match-score">@match.ScoreTeam1 – @match.ScoreTeam2</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Year { get; set; } = "";
+    [Parameter] public string TournamentId { get; set; } = "";
+
+    private Tournament? TournamentData;
+    private bool _loading = true;
+    private string? Winner;
+    private List<StandingEntry> Standings = [];
+    private List<TeamStatEntry> TeamStats = [];
+    private List<Round> ActiveRounds = [];
+    private HashSet<int> ExpandedRounds = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        var result = await gameServiceClient.GetArchivedTournament(Year, TournamentId);
+        if (result.Success && result.Data is not null)
+        {
+            TournamentData = result.Data;
+            TournamentData.PopulateAllMatchesPlayed();
+            ComputeDisplayData();
+        }
+        _loading = false;
+    }
+
+    private void ComputeDisplayData()
+    {
+        if (TournamentData is null) return;
+
+        Standings = TournamentData.Teams
+            .Select(t => new StandingEntry { TeamName = t.TeamName, Score = t.CurrentScore })
+            .OrderByDescending(s => s.Score)
+            .ToList();
+
+        Winner = Standings.FirstOrDefault()?.TeamName;
+
+        ActiveRounds = TournamentData.Rounds
+            .Where(r => !r.isStaging)
+            .OrderBy(r => r.RoundId)
+            .ToList();
+
+        foreach (var team in TournamentData.Teams)
+        {
+            var entry = new TeamStatEntry { TeamName = team.TeamName };
+
+            var opponents = team.MatchesPlayed
+                .Select(m => m.GetOpponentsName(team.TeamName))
+                .Where(n => n != null)
+                .Distinct();
+
+            foreach (var oppName in opponents)
+            {
+                var matches = team.MatchesPlayed.Where(m => m.IsTeamPlaying(oppName!)).ToList();
+                var wins = matches.Count(m =>
+                {
+                    var myScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam1 : m.ScoreTeam2;
+                    var theirScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam2 : m.ScoreTeam1;
+                    return m.HasCompleted && myScore > theirScore;
+                });
+                var losses = matches.Count(m =>
+                {
+                    var myScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam1 : m.ScoreTeam2;
+                    var theirScore = m.Team_1_Name == team.TeamName ? m.ScoreTeam2 : m.ScoreTeam1;
+                    return m.HasCompleted && myScore < theirScore;
+                });
+                entry.Opponents.Add(new OpponentEntry { Name = oppName!, TimesPlayed = matches.Count, Wins = wins, Losses = losses });
+            }
+
+            var games = team.MatchesPlayed
+                .Select(m => m.Game?.Name)
+                .Where(n => n != null)
+                .Distinct();
+
+            foreach (var gameName in games)
+            {
+                var count = team.MatchesPlayed.Count(m => m.Game?.Name == gameName);
+                entry.Games.Add(new GameEntry { Name = gameName!, TimesPlayed = count });
+            }
+
+            TeamStats.Add(entry);
+        }
+    }
+
+    private void ToggleRound(int roundId)
+    {
+        if (!ExpandedRounds.Remove(roundId))
+            ExpandedRounds.Add(roundId);
+    }
+
+    private class StandingEntry { public string TeamName { get; set; } = ""; public int Score { get; set; } }
+    private class TeamStatEntry { public string TeamName { get; set; } = ""; public List<OpponentEntry> Opponents { get; set; } = []; public List<GameEntry> Games { get; set; } = []; }
+    private class OpponentEntry { public string Name { get; set; } = ""; public int TimesPlayed { get; set; } public int Wins { get; set; } public int Losses { get; set; } }
+    private class GameEntry { public string Name { get; set; } = ""; public int TimesPlayed { get; set; } }
+}

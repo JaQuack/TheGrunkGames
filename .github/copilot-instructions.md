@@ -30,12 +30,13 @@ TheGrunkGames.sln
 - Registers resources:
   - `mongodb` → MongoDB container (persistent lifetime, named volume `thegrunkgames-mongo-data`)
   - `thegrunkgames` → MongoDB database (hosted in the `mongodb` container)
-  - `gameservice` → `TheGrunkGames` (backend API, depends on MongoDB)
+  - `archiveTables` → external connection string for Azure Table Storage (provided to the API via `AddConnectionString`; connection string injected as a Docker env var at runtime)
+  - `gameservice` → `TheGrunkGames` (backend API, depends on MongoDB and Azure Tables)
   - `blazorapp` → `TheGrunkGames.BlazorApp` (frontend)
 - Both services expose external HTTP endpoints.
 - The Blazor app references the API via Aspire service discovery (`https+http://gameservice`).
 - The API references MongoDB via Aspire service discovery — connection strings are injected automatically.
-- Deployment target: Azure Container Apps (configured via `azure.yaml` and Bicep param files in `infra/`).
+- Deployment target: Self-hosted Docker on a local VM server.
 - Custom domain support is parameterised (`customDomain`, `certificateName`).
 
 ### TheGrunkGames (Backend API)
@@ -43,16 +44,19 @@ TheGrunkGames.sln
 - **Role:** ASP.NET Core Web API that manages all tournament logic.
 - **Entry point:** `Program.cs` — registers controllers, Swagger, CORS (wide-open), SignalR, and the three singleton services.
 - **Controllers:**
-  - `GameController` — all tournament endpoints (`/Game/...`): rounds, matches, teams, games, standings, tournament CRUD, reset. Thin delegation to `IGameService` — no business logic in the controller.
+  - `GameController` — all tournament endpoints (`/Game/...`): rounds, matches, teams, games, standings, tournament CRUD, reset, archive. Archive endpoints: `POST /Game/Tournament/Archive`, `GET /Game/Tournament/Archives`, `GET /Game/Tournament/Archives/{year}/{tournamentId}`. Thin delegation to `IGameService` — no business logic in the controller.
+  - `MigrationController` — one-time CSV import endpoint (`POST /Migration/ImportCsv`) for importing old Azure Table Storage tournament data into the new archive schema.
   - `HomeController` — placeholder MVC controller (returns a view at `/`).
 - **Hubs:**
   - `TournamentHub` (`/hubs/tournament`) — SignalR hub for real-time push notifications. Broadcasts a `"TournamentUpdated"` message to all connected clients whenever tournament data is saved.
 - **Services (registered as singletons via interfaces):**
-  - `IGameService` / `GameService` — core tournament business logic (CRUD for teams/games/rounds/matches, staging workflow, standings, stats, tournament reset). Depends on `IStorageService` and `MatchmakingService`. Owns the `IHubContext<TournamentHub>` for broadcasting notifications after every save via a private `MutateTournament()` helper. Also provides `ResetTournament()` to archive the current state and start fresh with defaults.
+  - `IGameService` / `GameService` — core tournament business logic (CRUD for teams/games/rounds/matches, staging workflow, standings, stats, tournament reset, archive). Depends on `IStorageService`, `MatchmakingService`, and `ITournamentArchiveService`. Owns the `IHubContext<TournamentHub>` for broadcasting notifications after every save via a private `MutateTournament()` helper. Also provides `ResetTournament()` to reset and start fresh with defaults, and `ArchiveTournamentAsync()` to save a completed tournament to Azure Table Storage.
   - `MatchmakingService` — the round-generation algorithm (matchup pairing, weighting, time-trial assignment). Pure logic, no storage dependency. Called by `GameService.GetNextRound()`.
-  - `IStorageService` / `StorageService` — persistence layer only. Uses **MongoDB** (via `Aspire.MongoDB.Driver` / `IMongoClient`) with an **in-memory cache** for performance. Falls back to **in-memory-only** mode when no `IMongoClient` is available (tests). Has no SignalR dependency — notification is handled by `GameService`.
+  - `IStorageService` / `StorageService` — persistence layer for the **active** tournament only. Uses **MongoDB** (via `Aspire.MongoDB.Driver` / `IMongoClient`) with an **in-memory cache** for performance. Falls back to **in-memory-only** mode when no `IMongoClient` is available (tests). Has no SignalR dependency — notification is handled by `GameService`.
+  - `ITournamentArchiveService` / `TournamentArchiveService` — writes completed tournaments to **Azure Table Storage** (table: `TournamentArchive`). Receives `TableServiceClient` via DI from the Aspire `Aspire.Azure.Data.Tables` integration (identity-based auth, no connection string secrets). Gracefully degrades if the table service is unavailable. Used only for explicit archive actions, not automatic syncs.
 - **Entities:**
   - `TournamentDocument` — MongoDB document model storing tournament snapshots keyed by year and round version.
+  - `TournamentArchiveEntity` — Azure Table entity (`ITableEntity`) mapping `Tournament` to/from the `TournamentArchive` table. `PartitionKey` = year, `RowKey` = tournament ID.
 - **Known issues / tech-debt:**
   - `GameService` and `StorageService` are singletons holding state; this was fragile in previous runs.
   - `HomeController` exists but there are no Views in the project — likely leftover.
@@ -73,6 +77,11 @@ TheGrunkGames.sln
   - `/admin/standings` (`Standings.razor`) — read-only ordered standings table. **Requires admin auth.**
   - `/admin/stats` (`TeamStatsPage.razor`) — per-team opponent and game breakdown cards. **Requires admin auth.**
   - `/admin/history` (`TournamentHistory.razor`) — view and restore historical tournament snapshots from MongoDB. **Requires admin auth.**
+  - `/admin/archive` (`ArchiveTournament.razor`) — archive the current tournament to Azure Table Storage with optional name/ID. **Requires admin auth.**
+  - `/standings` (`Standings.razor`) — public live standings with real-time updates. **Public — no auth required.**
+  - `/stats` (`Stats.razor`) — public team stats with real-time updates. **Public — no auth required.**
+  - `/history` (`History.razor`) — public listing of archived tournaments from Azure Table Storage. **Public — no auth required.**
+  - `/history/{Year}/{TournamentId}` (`ArchivedTournament.razor`) — public detail view of an archived tournament: standings, team stats with W/L records, all rounds/matches. **Public — no auth required.**
 - **Shared admin components** (`Components/Admin/Shared/`):
   - `AccessDenied.razor` — shown when an unauthenticated user tries to access an admin page; has a "Sign in with SSO" link.
   - `StatusMessage.razor` — success/error banner with auto-dismiss.
@@ -89,7 +98,7 @@ TheGrunkGames.sln
 - **Role:** Shared class library referenced by both the API and Blazor app.
 - **Namespace:** `TheGrunkGames.Models.TournamentModels`
 - **Key types:**
-  - `Tournament` — root aggregate. Contains `Teams`, `Games`, `Rounds`. Has `IsTimeTrial` and `NrTeamsToTimeTrial` config.
+  - `Tournament` — root aggregate. Contains `Teams`, `Games`, `Rounds`. Has `IsTimeTrial` and `NrTeamsToTimeTrial` config. Also has `TournamentId`, `TournamentName`, `CompletedAt` metadata (set when archiving).
   - `Team` — name, players, computed `CurrentScore`, extra points, match history helpers.
   - `Game` — name + `Device` enum.
   - `Device` — enum: `TV`, `TV_Steam`, `LAP_Steam`, `PC`, `IRL`, `TIMETRIAL`.
@@ -98,6 +107,7 @@ TheGrunkGames.sln
   - `MatchResult` — DTO for completing a match (match ID + scores).
   - `Player` — just a name.
   - `TeamStanding` — used for standings display.
+  - `TournamentArchiveSummary` — DTO for archived tournament listings (ID, name, year, winner, round/team/match counts).
 
 ### TheGrunkGames.ServiceDefaults
 
@@ -109,7 +119,7 @@ TheGrunkGames.sln
 - **Role:** xUnit test project.
 - Tests `GameService` logic using the in-memory `StorageService` fallback (no connection string).
 - Also tests model validation via `System.ComponentModel.DataAnnotations.Validator`.
-- Uses **NSubstitute** for mocking `IStorageService` and `IHubContext<TournamentHub>` in isolation tests.
+- Uses **NSubstitute** for mocking `IStorageService`, `ITournamentArchiveService`, and `IHubContext<TournamentHub>` in isolation tests.
 - Test framework: xUnit 2.9 + Microsoft.NET.Test.Sdk 18.3 + NSubstitute 5.3.
 
 ---
@@ -141,14 +151,15 @@ dotnet test TheGrunkGames.Tests
 
 Tests use the in-memory storage fallback, so no Azure resources are required.
 
-### Deployment (Azure Container Apps via azd)
+### Deployment (Self-hosted Docker)
 
-The Aspire host is configured for Azure Container Apps deployment:
+The app is self-hosted in Docker on a local VM server. To enable Azure Table Storage for tournament archiving, pass the connection string as a Docker environment variable:
 
-```powershell
-azd init
-azd up
 ```
+ConnectionStrings__archiveTables=DefaultEndpointsProtocol=https;AccountName=<your_account>;AccountKey=<your_key>;EndpointSuffix=core.windows.net
+```
+
+When the `archiveTables` connection string is absent, the archive service starts in no-op mode — all other functionality works normally.
 
 Bicep parameter files are in `TheGrunkGames.Aspire/infra/`.
 
@@ -162,15 +173,17 @@ Browser  →  Blazor Server (blazorapp)  →  GameServiceClient (HttpClient)
                                          ASP.NET Core API (gameservice)
                                               ↓
                                          GameService (singleton)
-                                              ↓
-                                         StorageService (singleton, in-memory cache)
-                                              ↓
-                                    MongoDB (Docker container)  OR  In-Memory
+                                           ↓                    ↓
+              StorageService (active tournament)    TournamentArchiveService (completed tournaments)
+                       ↓                                        ↓
+              MongoDB (Docker)                        Azure Table Storage
+              OR In-Memory                            (optional, graceful degradation)
 ```
 
 - The Blazor app never accesses storage directly; all data flows through the API.
-- `GameService` is the only consumer of `StorageService`.
+- `GameService` is the only consumer of `StorageService` and `TournamentArchiveService`.
 - Both services are singletons — state is shared across all requests within the process lifetime.
+- Azure Table Storage is write-once (on explicit archive action) — no background syncs or dual-writes.
 
 ---
 

@@ -1,0 +1,108 @@
+@page "/stats"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject GameServiceClient gameServiceClient
+@inject TournamentHubConnection hubConnection
+
+<div class="stats-page">
+    <div class="page-header">
+        <h1>📊 Team Stats</h1>
+    </div>
+
+    @if (TeamStats is not null && TeamStats.Count > 0)
+    {
+        <div class="stats-grid">
+            @foreach (var team in TeamStats)
+            {
+                <div class="team-stats-card">
+                    <div class="card-header">@team.TeamName</div>
+                    <div class="card-body">
+                        @if (team.PlayedAgainstTeam.Count > 0)
+                        {
+                            <h6>Played Against</h6>
+                            <table class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>Opponent</th>
+                                        <th>Times</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var opponent in team.PlayedAgainstTeam)
+                                    {
+                                        <tr>
+                                            <td>@opponent.Key</td>
+                                            <td>@opponent.Value</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+
+                        @if (team.PlayedGames.Count > 0)
+                        {
+                            <h6>Games Played</h6>
+                            <table class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>Game</th>
+                                        <th>Times</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var game in team.PlayedGames)
+                                    {
+                                        <tr>
+                                            <td>@game.Key</td>
+                                            <td>@game.Value</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+
+                        @if (team.PlayedAgainstTeam.Count == 0 && team.PlayedGames.Count == 0)
+                        {
+                            <p class="no-matches">No matches played yet.</p>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="no-data">No team stats available.</p>
+    }
+</div>
+
+@code {
+    private List<TheGrunkGames.Models.TournamentModels.TeamStats>? TeamStats;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection.OnTournamentUpdated += OnTournamentUpdated;
+        await hubConnection.StartAsync();
+        await LoadData();
+    }
+
+    private void OnTournamentUpdated()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await LoadData();
+            StateHasChanged();
+        });
+    }
+
+    private async Task LoadData()
+    {
+        var result = await gameServiceClient.GetTeamStats();
+        TeamStats = result.Success ? result.Data : null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        hubConnection.OnTournamentUpdated -= OnTournamentUpdated;
+    }
+}

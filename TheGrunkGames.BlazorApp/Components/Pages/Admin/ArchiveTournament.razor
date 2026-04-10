@@ -1,0 +1,109 @@
+@page "/admin/archive"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Admin")]
+@inject GameServiceClient GameService
+
+<h3>Archive Tournament</h3>
+
+<StatusMessage Message="@_statusMessage" IsError="@_isError" OnDismissed="() => _statusMessage = null" />
+
+@if (_loading)
+{
+    <p>Loading current tournament...</p>
+}
+else if (_tournament is not null)
+{
+    <div class="mb-4">
+        <h5>Current Tournament Summary</h5>
+        <ul>
+            <li><strong>Teams:</strong> @_tournament.Teams.Count</li>
+            <li><strong>Rounds:</strong> @_tournament.Rounds.Count(r => !r.isStaging)</li>
+            <li><strong>Total Matches:</strong> @_tournament.Rounds.Where(r => !r.isStaging).Sum(r => r.Matches.Count)</li>
+        </ul>
+
+        @if (_standings.Count > 0)
+        {
+            <h6>Top Standings</h6>
+            <ol>
+                @foreach (var s in _standings.Take(3))
+                {
+                    <li>@s.TeamName — @s.TeamScore pts</li>
+                }
+            </ol>
+        }
+    </div>
+
+    <div class="mb-3" style="max-width: 500px;">
+        <label class="form-label">Tournament Name (optional)</label>
+        <input type="text" class="form-control" @bind="_name" placeholder="Gustavs Speltävling @DateTime.Now.Year" />
+    </div>
+
+    <div class="mb-3" style="max-width: 500px;">
+        <label class="form-label">Tournament ID (optional)</label>
+        <input type="text" class="form-control" @bind="_tournamentId" placeholder="@DateTime.UtcNow.ToString("yyyy-MM-dd")" />
+        <div class="form-text">Auto-generated from today's date if left empty.</div>
+    </div>
+
+    <div class="alert alert-warning" style="max-width: 500px;">
+        This will save a permanent snapshot of the current tournament to the cloud archive.
+        It does <strong>not</strong> reset the active tournament.
+    </div>
+
+    @if (_confirmArchive)
+    {
+        <button class="btn btn-danger me-2" @onclick="DoArchive" disabled="@_archiving">
+            @(_archiving ? "Archiving..." : "Confirm Archive")
+        </button>
+        <button class="btn btn-secondary" @onclick="() => _confirmArchive = false">Cancel</button>
+    }
+    else
+    {
+        <button class="btn btn-primary" @onclick="() => _confirmArchive = true">Archive Tournament</button>
+    }
+}
+
+@code {
+    private Tournament? _tournament;
+    private List<TeamStanding> _standings = [];
+    private bool _loading = true;
+    private string? _name;
+    private string? _tournamentId;
+    private bool _confirmArchive;
+    private bool _archiving;
+    private string? _statusMessage;
+    private bool _isError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        var result = await GameService.GetTournament();
+        if (result.Success)
+        {
+            _tournament = result.Data;
+        }
+
+        var standingsResult = await GameService.GetTeamStandings();
+        if (standingsResult.Success)
+            _standings = standingsResult.Data ?? [];
+
+        _loading = false;
+    }
+
+    private async Task DoArchive()
+    {
+        _archiving = true;
+        var result = await GameService.ArchiveTournament(_name, _tournamentId);
+        if (result.Success)
+        {
+            _statusMessage = "Tournament archived successfully!";
+            _isError = false;
+        }
+        else
+        {
+            _statusMessage = result.Error ?? "Failed to archive tournament.";
+            _isError = true;
+        }
+        _confirmArchive = false;
+        _archiving = false;
+    }
+}

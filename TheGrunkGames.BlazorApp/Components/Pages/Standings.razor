@@ -1,0 +1,74 @@
+@page "/standings"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject GameServiceClient gameServiceClient
+@inject TournamentHubConnection hubConnection
+
+<div class="standings-page">
+    <div class="page-header">
+        <h1>🏆 Team Standings</h1>
+    </div>
+
+    @if (TeamStandings is not null && TeamStandings.Count > 0)
+    {
+        <table class="standings-table">
+            <thead>
+                <tr>
+                    <th class="rank-col">#</th>
+                    <th>Team</th>
+                    <th class="score-col">Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (var i = 0; i < TeamStandings.Count; i++)
+                {
+                    <tr class="@(i == 0 ? "first-place" : i == 1 ? "second-place" : i == 2 ? "third-place" : "")">
+                        <td class="rank-col">
+                            @if (i == 0) { <span>🥇</span> }
+                            else if (i == 1) { <span>🥈</span> }
+                            else if (i == 2) { <span>🥉</span> }
+                            else { <span>@(i + 1)</span> }
+                        </td>
+                        <td>@TeamStandings[i].TeamName</td>
+                        <td class="score-col">@TeamStandings[i].TeamScore</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p class="no-data">No standings available.</p>
+    }
+</div>
+
+@code {
+    private List<TeamStanding>? TeamStandings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection.OnTournamentUpdated += OnTournamentUpdated;
+        await hubConnection.StartAsync();
+        await LoadData();
+    }
+
+    private void OnTournamentUpdated()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await LoadData();
+            StateHasChanged();
+        });
+    }
+
+    private async Task LoadData()
+    {
+        var standingsResult = await gameServiceClient.GetTeamStandings();
+        TeamStandings = standingsResult.Success ? standingsResult.Data : null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        hubConnection.OnTournamentUpdated -= OnTournamentUpdated;
+    }
+}

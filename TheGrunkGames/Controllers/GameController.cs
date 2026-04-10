@@ -114,6 +114,36 @@ namespace TheGrunkGames.Controllers
             return Ok();
         }
 
+        [HttpPost("Tournament/Archive")]
+        public async Task<IActionResult> ArchiveTournament(string? name = null, string? tournamentId = null)
+        {
+            try
+            {
+                await _gameService.ArchiveTournamentAsync(name, tournamentId);
+                return Ok();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("Tournament/Archives")]
+        public async Task<List<TournamentArchiveSummary>> GetArchivedTournaments()
+        {
+            return await _gameService.ListArchivedTournamentsAsync();
+        }
+
+        [HttpGet("Tournament/Archives/{year}/{tournamentId}")]
+        public async Task<IActionResult> GetArchivedTournament(string year, string tournamentId)
+        {
+            var tournament = await _gameService.GetArchivedTournamentAsync(year, tournamentId);
+            if (tournament == null)
+                return NotFound();
+
+            return Ok(tournament);
+        }
+
         [HttpGet("Teams")]
         public async Task<List<Team>> GetTeams()
         {

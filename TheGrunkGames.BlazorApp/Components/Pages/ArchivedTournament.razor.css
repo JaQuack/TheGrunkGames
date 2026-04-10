@@ -1,0 +1,260 @@
+.detail-page {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 2rem 3rem;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.loading-message {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #888;
+    padding: 2rem 0;
+}
+
+.no-data {
+    font-size: 1.3rem;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.back-link {
+    color: #a0b4ff;
+    text-decoration: none;
+    font-size: 1rem;
+}
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+
+.detail-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+    .detail-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0.5rem 0 0.3rem;
+        text-shadow: 0 0 20px rgba(100, 150, 255, 0.3);
+    }
+
+.completed-date {
+    color: #888;
+    font-size: 1rem;
+    margin: 0 0 0.8rem;
+}
+
+.winner-banner {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.detail-section {
+    margin-bottom: 2.5rem;
+}
+
+    .detail-section h2 {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #a0b4ff;
+        border-bottom: 2px solid #2a2a4a;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.2rem;
+    }
+
+/* Standings */
+.standings-table {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    font-size: 1.3rem;
+}
+
+    .standings-table thead th {
+        color: #a0b4ff;
+        font-weight: 600;
+        border-bottom: 2px solid #2a2a4a;
+        padding: 0.6rem 1rem;
+        text-align: left;
+    }
+
+    .standings-table tbody tr {
+        border-bottom: 1px solid #2a2a4a;
+    }
+
+    .standings-table td {
+        padding: 0.6rem 1rem;
+    }
+
+.rank-col {
+    width: 60px;
+    text-align: center;
+}
+
+.score-col {
+    width: 100px;
+    text-align: right;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.first-place td { color: #ffd700; font-size: 1.5rem; }
+.second-place td { color: #c0c0c0; font-size: 1.4rem; }
+.third-place td { color: #cd7f32; font-size: 1.35rem; }
+
+/* Team Stats */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.team-stats-card {
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.card-header {
+    background: #0f172a;
+    color: #a0b4ff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 0.8rem 1rem;
+    border-bottom: 2px solid #2a2a4a;
+}
+
+.card-body {
+    padding: 1rem;
+}
+
+    .card-body h6 {
+        color: #a0b4ff;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin: 0.8rem 0 0.4rem;
+    }
+
+        .card-body h6:first-child {
+            margin-top: 0;
+        }
+
+.mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+    .mini-table thead th {
+        color: #666;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-align: left;
+        padding: 0.3rem 0.4rem;
+        border-bottom: 1px solid #2a2a4a;
+    }
+
+    .mini-table td {
+        padding: 0.35rem 0.4rem;
+    }
+
+    .mini-table .win { color: #2ecc71; font-weight: 600; }
+    .mini-table .loss { color: #ff6b6b; font-weight: 600; }
+
+/* Rounds */
+.round-block {
+    margin-bottom: 1rem;
+}
+
+.round-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #a0b4ff;
+    cursor: pointer;
+    user-select: none;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #2a2a4a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+    .round-title:hover {
+        color: #c0d0ff;
+    }
+
+.toggle-icon {
+    font-size: 1rem;
+}
+
+.match-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 0.8rem;
+    padding: 1rem 0;
+}
+
+.match-card {
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+    .match-card.match-completed {
+        border-color: #2ecc71;
+        opacity: 0.85;
+    }
+
+.match-teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.team-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.team-left { text-align: right; flex: 1; }
+.team-right { text-align: left; flex: 1; }
+
+.vs-badge {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.15);
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.match-game {
+    text-align: center;
+    color: #a0b4ff;
+    font-size: 0.95rem;
+    margin-top: 0.4rem;
+}
+
+.match-score {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2ecc71;
+    margin-top: 0.3rem;
+}

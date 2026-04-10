@@ -1,0 +1,56 @@
+@page "/history"
+@rendermode InteractiveServer
+@inject GameServiceClient gameServiceClient
+
+<div class="history-page">
+    <div class="page-header">
+        <h1>📜 Tournament History</h1>
+    </div>
+
+    @if (_loading)
+    {
+        <p class="loading-message">Loading history...</p>
+    }
+    else if (Archives is not null && Archives.Count > 0)
+    {
+        <div class="archive-grid">
+            @foreach (var entry in Archives)
+            {
+                <a href="/history/@entry.Year/@entry.TournamentId" class="archive-card">
+                    <div class="archive-card-header">
+                        <span class="archive-name">@entry.TournamentName</span>
+                        <span class="archive-year">@entry.Year</span>
+                    </div>
+                    <div class="archive-winner">
+                        🏆 @entry.WinningTeam
+                    </div>
+                    <div class="archive-stats">
+                        <span>@entry.TotalTeams teams</span>
+                        <span>@entry.TotalRounds rounds</span>
+                        <span>@entry.TotalMatches matches</span>
+                    </div>
+                    <div class="archive-date">
+                        Completed @entry.CompletedAt.ToString("yyyy-MM-dd")
+                    </div>
+                </a>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="no-data">No archived tournaments yet.</p>
+    }
+</div>
+
+@code {
+    private List<TournamentArchiveSummary>? Archives;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        var result = await gameServiceClient.GetArchivedTournaments();
+        Archives = result.Success ? result.Data : null;
+        _loading = false;
+    }
+}

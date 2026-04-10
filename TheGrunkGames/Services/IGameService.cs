@@ -50,5 +50,10 @@ namespace TheGrunkGames.Services
         // History
         Task GetAndSetHistory(string version, string year);
         Task<List<TournamentHistorySummary>> ListTournamentHistory();
+
+        // Archive
+        Task ArchiveTournamentAsync(string? tournamentName, string? tournamentId);
+        Task<List<TournamentArchiveSummary>> ListArchivedTournamentsAsync();
+        Task<Tournament?> GetArchivedTournamentAsync(string year, string tournamentId);
     }
 }

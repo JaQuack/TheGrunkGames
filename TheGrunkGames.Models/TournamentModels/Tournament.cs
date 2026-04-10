@@ -30,8 +30,17 @@
                 .SelectMany(r => r.Matches)
                 .Where(m => !m.HasCompleted);
 
+        public string TournamentId { get; set; } = string.Empty;
+        public string TournamentName { get; set; } = string.Empty;
+        public DateTime? CompletedAt { get; set; }
+
         public bool IsTimeTrial { get; set; }
         public int NrTeamsToTimeTrial { get; set; }
+
+        public void PopulateAllMatchesPlayed()
+        {
+            PopulateMatchesPlayed(Teams);
+        }
 
         private void PopulateMatchesPlayed(IEnumerable<Team> teams)
         {

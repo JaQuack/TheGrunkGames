@@ -17,7 +17,8 @@ namespace TheGrunkGames.Tests
         {
             var storageService = new StorageService();
             var matchmakingService = new MatchmakingService();
-            var gameService = new GameService(storageService, matchmakingService);
+            var archiveService = Substitute.For<ITournamentArchiveService>();
+            var gameService = new GameService(storageService, matchmakingService, archiveService);
             await gameService.InitializeAsync();
             return gameService;
         }
@@ -1249,7 +1250,8 @@ namespace TheGrunkGames.Tests
         {
             IStorageService storageService = new StorageService();
             var matchmakingService = new MatchmakingService();
-            var gameService = new GameService(storageService, matchmakingService);
+            var archiveService = Substitute.For<ITournamentArchiveService>();
+            var gameService = new GameService(storageService, matchmakingService, archiveService);
 
             await gameService.InitializeAsync();
 
@@ -1266,13 +1268,14 @@ namespace TheGrunkGames.Tests
         {
             var storageService = new StorageService();
             var matchmakingService = new MatchmakingService();
+            var archiveService = Substitute.For<ITournamentArchiveService>();
             var hubContext = Substitute.For<IHubContext<TournamentHub>>();
             var clients = Substitute.For<IHubClients>();
             var clientProxy = Substitute.For<IClientProxy>();
             hubContext.Clients.Returns(clients);
             clients.All.Returns(clientProxy);
 
-            var gameService = new GameService(storageService, matchmakingService, hubContext);
+            var gameService = new GameService(storageService, matchmakingService, archiveService, hubContext);
             await gameService.InitializeAsync();
 
             await gameService.AddTeam(new Team { TeamName = "TestTeam" });
@@ -1288,7 +1291,8 @@ namespace TheGrunkGames.Tests
         {
             var storageService = new StorageService();
             var matchmakingService = new MatchmakingService();
-            var gameService = new GameService(storageService, matchmakingService);
+            var archiveService = Substitute.For<ITournamentArchiveService>();
+            var gameService = new GameService(storageService, matchmakingService, archiveService);
             await gameService.InitializeAsync();
 
             await gameService.AddTeam(new Team { TeamName = "TestTeam" });
@@ -1311,7 +1315,8 @@ namespace TheGrunkGames.Tests
                 Rounds = []
             });
             var matchmakingService = new MatchmakingService();
-            var gameService = new GameService(storageService, matchmakingService);
+            var archiveService = Substitute.For<ITournamentArchiveService>();
+            var gameService = new GameService(storageService, matchmakingService, archiveService);
 
             await gameService.AddTeam(new Team { TeamName = "Alpha" });
 
@@ -1335,13 +1340,79 @@ namespace TheGrunkGames.Tests
             var storageService = Substitute.For<IStorageService>();
             storageService.GetTournament().Returns(tournament);
             var matchmakingService = new MatchmakingService();
-            var gameService = new GameService(storageService, matchmakingService);
+            var archiveService = Substitute.For<ITournamentArchiveService>();
+            var gameService = new GameService(storageService, matchmakingService, archiveService);
 
             await gameService.CompleteMatch(new MatchResult { MatchId = 1, Team1Score = 3, Team2Score = 1 });
 
             await storageService.Received(1).SaveTournament(Arg.Is<Tournament>(t =>
                 t.Rounds[0].Matches[0].HasCompleted &&
                 t.Rounds[0].Matches[0].ScoreTeam1 == 3));
+        }
+
+        #endregion
+
+        #region Archive
+
+        [Fact]
+        public async Task ArchiveTournament_SetsMetadataAndDelegatesToArchiveService()
+        {
+            var tournament = new Tournament
+            {
+                Games = [new() { Name = "G", Device = Device.TV }],
+                Rounds = [new() {
+                    RoundId = 1,
+                    Matches = [new() { MatchId = 1, Game = new() { Name = "G", Device = Device.TV }, Team_1_Name = "A", Team_2_Name = "B", HasCompleted = true, ScoreTeam1 = 3, ScoreTeam2 = 1 }]
+                }]
+            };
+            tournament.SetTeams([new() { TeamName = "A" }, new() { TeamName = "B" }]);
+
+            var storageService = Substitute.For<IStorageService>();
+            storageService.GetTournament().Returns(tournament);
+            var archiveService = Substitute.For<ITournamentArchiveService>();
+            var gameService = new GameService(storageService, new MatchmakingService(), archiveService);
+
+            await gameService.ArchiveTournamentAsync("Test Tournament", "test-2025");
+
+            await archiveService.Received(1).ArchiveTournamentAsync(Arg.Is<Tournament>(t =>
+                t.TournamentId == "test-2025" &&
+                t.TournamentName == "Test Tournament" &&
+                t.CompletedAt != null));
+        }
+
+        [Fact]
+        public async Task ArchiveTournament_GeneratesDefaultId_WhenNoneProvided()
+        {
+            var tournament = new Tournament();
+            tournament.SetTeams([new() { TeamName = "A" }]);
+
+            var storageService = Substitute.For<IStorageService>();
+            storageService.GetTournament().Returns(tournament);
+            var archiveService = Substitute.For<ITournamentArchiveService>();
+            var gameService = new GameService(storageService, new MatchmakingService(), archiveService);
+
+            await gameService.ArchiveTournamentAsync(null, null);
+
+            await archiveService.Received(1).ArchiveTournamentAsync(Arg.Is<Tournament>(t =>
+                !string.IsNullOrEmpty(t.TournamentId) &&
+                !string.IsNullOrEmpty(t.TournamentName) &&
+                t.CompletedAt != null));
+        }
+
+        [Fact]
+        public async Task ArchiveTournament_UsesProvidedIdAndName()
+        {
+            var tournament = new Tournament();
+            var storageService = Substitute.For<IStorageService>();
+            storageService.GetTournament().Returns(tournament);
+            var archiveService = Substitute.For<ITournamentArchiveService>();
+            var gameService = new GameService(storageService, new MatchmakingService(), archiveService);
+
+            await gameService.ArchiveTournamentAsync("Summer LAN 2025", "2025-summer");
+
+            await archiveService.Received(1).ArchiveTournamentAsync(Arg.Is<Tournament>(t =>
+                t.TournamentId == "2025-summer" &&
+                t.TournamentName == "Summer LAN 2025"));
         }
 
         #endregion

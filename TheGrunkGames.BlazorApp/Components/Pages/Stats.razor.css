@@ -1,0 +1,106 @@
+.stats-page {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 2rem 3rem;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+    .page-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0;
+        text-shadow: 0 0 20px rgba(100, 150, 255, 0.3);
+    }
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.team-stats-card {
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.card-header {
+    background: #0f172a;
+    color: #a0b4ff;
+    font-weight: 700;
+    font-size: 1.2rem;
+    padding: 1rem;
+    border-bottom: 2px solid #2a2a4a;
+}
+
+.card-body {
+    padding: 1rem;
+}
+
+    .card-body h6 {
+        color: #a0b4ff;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        margin-top: 1rem;
+    }
+
+        .card-body h6:first-child {
+            margin-top: 0;
+        }
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+}
+
+    .stats-table thead th {
+        color: #888;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-align: left;
+        padding: 0.4rem 0.5rem;
+        border-bottom: 1px solid #2a2a4a;
+    }
+
+    .stats-table tbody tr {
+        border-bottom: 1px solid rgba(42, 42, 74, 0.5);
+    }
+
+        .stats-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+    .stats-table td {
+        padding: 0.5rem;
+    }
+
+        .stats-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: #a0b4ff;
+        }
+
+.no-matches {
+    color: #888;
+    font-style: italic;
+    margin: 0;
+}
+
+.no-data {
+    font-size: 1.3rem;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem 0;
+}
